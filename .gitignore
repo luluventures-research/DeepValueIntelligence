@@ -1,0 +1,14 @@
+env/
+__pycache__/
+.DS_Store
+*.csv
+src/
+eval_results/
+eval_data/
+*.egg-info/
+.env
+utils/cache/
+*.otf
+utils/sec_metrics_builder/stock_price_history_universal.json
+utils/pypl_facts.json
+*.log
