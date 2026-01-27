@@ -37,7 +37,7 @@ DEFAULT_CONFIG = {
     "openai_api_key": os.getenv("OPENAI_API_KEY"),
     "openai_api_base": os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1"),
     "google_api_key": os.getenv("GOOGLE_API_KEY"),
-    "google_api_base": os.getenv("GOOGLE_API_BASE", "https://generativelanguage.googleapis.com/v1beta"),
+    "google_api_base": os.getenv("GOOGLE_API_BASE", "https://generativelanguage.googleapis.com/v1"),
     "anthropic_api_key": os.getenv("ANTHROPIC_API_KEY"),
     # Debate and discussion settings
     "max_debate_rounds": 1,

@@ -128,26 +128,22 @@ def select_shallow_thinking_agent(provider) -> str:
     # Define shallow thinking llm engine options with their corresponding model names
     SHALLOW_AGENT_OPTIONS = {
         "openai": [
-            ("GPT-4o-mini - Fast and efficient for quick tasks", "gpt-4o-mini"),
-            ("GPT-4.1-nano - Ultra-lightweight model for basic operations", "gpt-4.1-nano"),
+            ("GPT-4o mini - Latest mini model from OpenAI", "gpt-4o-mini"),
             ("GPT-4.1-mini - Compact model with good performance", "gpt-4.1-mini"),
-            ("GPT-4o - Standard model with solid capabilities", "gpt-4o"),
+            ("o4-mini - Specialized reasoning model (compact)", "o4-mini"),
         ],
         "anthropic": [
-            ("Claude Haiku 3.5 - Fast inference and standard capabilities", "claude-3-5-haiku-latest"),
-            ("Claude Sonnet 3.5 - Highly capable standard model", "claude-3-5-sonnet-latest"),
-            ("Claude Sonnet 3.7 - Exceptional hybrid reasoning and agentic capabilities", "claude-3-7-sonnet-latest"),
-            ("Claude Sonnet 4 - High performance and excellent reasoning", "claude-sonnet-4-0"),
+            ("Claude 3.5 Haiku - Fast inference and standard capabilities", "claude-3-5-haiku-latest"),
+            ("Claude 3.5 Sonnet - Highly capable standard model", "claude-3-5-sonnet-latest"),
         ],
         "google": [
-            ("Gemini 2.0 Flash-Lite - Cost efficiency and low latency", "gemini-2.0-flash-lite"),
-            ("Gemini 2.0 Flash - Next generation features, speed, and thinking", "gemini-2.0-flash"),
-            ("Gemini 2.5 Flash - Adaptive thinking, cost efficiency", "gemini-2.5-flash-preview-05-20"),
+            ("Gemini 3 Flash - Pro-grade reasoning at Flash-level speed (Preview)", "gemini-3-flash-preview"),
+            ("Gemini 2.5 Flash - Adaptive thinking, cost efficiency", "gemini-2.5-flash-preview-04-17"),
+            ("Gemini 2.0 Flash - Deprecated March 2026", "gemini-2.0-flash"),
         ],
         "openrouter": [
-            ("Meta: Llama 4 Scout", "meta-llama/llama-4-scout:free"),
-            ("Meta: Llama 3.3 8B Instruct - A lightweight and ultra-fast variant of Llama 3.3 70B", "meta-llama/llama-3.3-8b-instruct:free"),
-            ("google/gemini-2.0-flash-exp:free - Gemini Flash 2.0 offers a significantly faster time to first token", "google/gemini-2.0-flash-exp:free"),
+            ("Mistral 7B Instruct - A lightweight and ultra-fast model", "mistralai/mistral-7b-instruct:free"),
+            ("Llama 3 8B Instruct - Next generation of Llama", "meta-llama/llama-3-8b-instruct:free"),
         ],
         "ollama": [
             ("llama3.1 local", "llama3.1"),
@@ -186,30 +182,23 @@ def select_deep_thinking_agent(provider) -> str:
     # Define deep thinking llm engine options with their corresponding model names
     DEEP_AGENT_OPTIONS = {
         "openai": [
-            ("GPT-4.1-nano - Ultra-lightweight model for basic operations", "gpt-4.1-nano"),
-            ("GPT-4.1-mini - Compact model with good performance", "gpt-4.1-mini"),
-            ("GPT-4o - Standard model with solid capabilities", "gpt-4o"),
-            ("o4-mini - Specialized reasoning model (compact)", "o4-mini"),
-            ("o3-mini - Advanced reasoning model (lightweight)", "o3-mini"),
-            ("o3 - Full advanced reasoning model", "o3"),
             ("o1 - Premier reasoning and problem-solving model", "o1"),
+            ("GPT-4o - OpenAI's most advanced model", "gpt-4o"),
+            ("GPT-4.1 - Outperforms GPT-4o in coding and instruction following", "gpt-4.1"),
         ],
         "anthropic": [
-            ("Claude Haiku 3.5 - Fast inference and standard capabilities", "claude-3-5-haiku-latest"),
-            ("Claude Sonnet 3.5 - Highly capable standard model", "claude-3-5-sonnet-latest"),
-            ("Claude Sonnet 3.7 - Exceptional hybrid reasoning and agentic capabilities", "claude-3-7-sonnet-latest"),
-            ("Claude Sonnet 4 - High performance and excellent reasoning", "claude-sonnet-4-0"),
-            ("Claude Opus 4 - Most powerful Anthropic model", "	claude-opus-4-0"),
+            ("Claude 3.7 Sonnet - Exceptional hybrid reasoning and agentic capabilities", "claude-3-7-sonnet-latest"),
+            ("Claude 4.0 Sonnet - High performance and excellent reasoning", "claude-sonnet-4-0"),
+            ("Claude 4.1 Opus - Most powerful Anthropic model", "claude-opus-4-1"),
         ],
         "google": [
-            ("Gemini 2.0 Flash-Lite - Cost efficiency and low latency", "gemini-2.0-flash-lite"),
-            ("Gemini 2.0 Flash - Next generation features, speed, and thinking", "gemini-2.0-flash"),
-            ("Gemini 2.5 Flash - Adaptive thinking, cost efficiency", "gemini-2.5-flash-preview-05-20"),
-            ("Gemini 2.5 Pro", "gemini-2.5-pro-preview-06-05"),
+            ("Gemini 3 Pro - State-of-the-art reasoning and multimodal (Preview)", "gemini-3-pro-preview"),
+            ("Gemini 2.5 Pro - Advanced model with 1M token context window", "gemini-2.5-pro-preview-05-06"),
+            ("Gemini 3 Flash - Pro-grade reasoning at Flash speed (Preview)", "gemini-3-flash-preview"),
         ],
         "openrouter": [
-            ("DeepSeek V3 - a 685B-parameter, mixture-of-experts model", "deepseek/deepseek-chat-v3-0324:free"),
-            ("Deepseek - latest iteration of the flagship chat model family from the DeepSeek team.", "deepseek/deepseek-chat-v3-0324:free"),
+            ("Nous Hermes 2 - Mixtral 8x7B DPO", "nousresearch/nous-hermes-2-mixtral-8x7b-dpo"),
+            ("Llama 3 70B Instruct - Largest and best performing Llama 3 model", "meta-llama/llama-3-70b-instruct"),
         ],
         "ollama": [
             ("llama3.1 local", "llama3.1"),

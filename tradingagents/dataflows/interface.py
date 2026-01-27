@@ -16,6 +16,27 @@ from openai import OpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
 from .config import get_config, set_config, DATA_DIR
 
+
+def _extract_gemini_content(content):
+    """Extract string content from Gemini response (handles list format)."""
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        # Handle Gemini's list format: [{'type': 'text', 'text': '...'}]
+        text_parts = []
+        for item in content:
+            if isinstance(item, dict) and item.get('type') == 'text':
+                text_parts.append(item.get('text', ''))
+            elif isinstance(item, str):
+                text_parts.append(item)
+            else:
+                text_parts.append(str(item))
+        return '\n\n'.join(text_parts)
+    return str(content)
+
+
 # Ticker mapping for problematic symbols
 TICKER_MAPPINGS = {
     # Berkshire Hathaway variations
@@ -954,10 +975,10 @@ def get_stock_news_google(ticker, curr_date):
         - Structure your response with clear headings and cite timeframes for each section
 
         **Data Quality Note**: Please indicate the confidence level and recency of your information sources."""
-        
+
         response = client.invoke(prompt)
-        return response.content
-        
+        return _extract_gemini_content(response.content)
+
     except Exception as e:
         return f"Error retrieving news with Google API: {str(e)}. Attempting to fall back to alternative news sources or cached data if available."
 
@@ -1021,10 +1042,10 @@ def get_global_news_google(curr_date):
         - Begin with a data quality disclaimer showing your information timeframe
         - Use recent data even if it's from before {curr_date}
         - Indicate confidence levels for different types of information"""
-        
+
         response = client.invoke(prompt)
-        return response.content
-        
+        return _extract_gemini_content(response.content)
+
     except Exception as e:
         return f"Error retrieving global news with Google API: {str(e)}. You may want to try using alternative news sources like get_google_news or get_reddit_news."
 
@@ -1094,12 +1115,13 @@ def get_fundamentals_google(ticker, curr_date):
         - Structure with clear headings showing data recency"""
         
         response = client.invoke(prompt)
-        
-        if response and response.content and len(response.content.strip()) > 50:
-            return f"# Google Fundamentals Analysis for {ticker}\n\n{response.content}"
+        content = _extract_gemini_content(response.content)
+
+        if content and len(content.strip()) > 50:
+            return f"# Google Fundamentals Analysis for {ticker}\n\n{content}"
         else:
             return f"Google API returned insufficient data for {ticker}. Try using get_enhanced_fundamentals for comprehensive fundamental analysis from multiple sources."
-        
+
     except Exception as e:
         error_msg = f"Error retrieving fundamentals with Google API: {str(e)}"
         fallback_msg = "Available alternative tools: get_enhanced_fundamentals, get_simfin_balance_sheet, get_simfin_income_stmt, get_simfin_cashflow"
