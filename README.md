@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/lulu_research.png" style="width: 60%; height: auto;">
+  <img src="assets/deep_value_intelligence.png" style="width: 60%; height: auto;">
 </p>
 
 <div align="center" style="line-height: 1;">
