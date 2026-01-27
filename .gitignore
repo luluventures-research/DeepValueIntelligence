@@ -5,6 +5,7 @@ __pycache__/
 src/
 eval_results/
 eval_data/
+results/
 *.egg-info/
 .env
 utils/cache/
