@@ -97,7 +97,7 @@ Our framework decomposes complex trading tasks into specialized roles. This ensu
 
 Clone TradingAgents:
 ```bash
-git clone https://github.com/luluventures-research/TradingAgents.git
+git clone https://github.com/luluventures-research/DeepValueIntelligence.git
 cd TradingAgents
 ```
 
