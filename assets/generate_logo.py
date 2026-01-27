@@ -4,8 +4,8 @@
 from PIL import Image, ImageDraw, ImageFont
 import os
 
-# Image dimensions (same as original)
-WIDTH = 2400
+# Image dimensions (wider to fit larger text)
+WIDTH = 2800
 HEIGHT = 500
 
 # Colors
@@ -78,7 +78,7 @@ font_paths = [
 ]
 
 font = None
-font_size = 120  # Keep original large font size
+font_size = 150  # Larger font size
 
 for font_path in font_paths:
     if os.path.exists(font_path):
