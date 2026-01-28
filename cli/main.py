@@ -35,11 +35,25 @@ app = typer.Typer(
 
 
 def _ensure_string(content):
-    """Convert content to string, handling Gemini's list format."""
+    """Convert content to string, extracting only 'text' field from Gemini's format."""
     if content is None:
         return ""
     if isinstance(content, str):
+        # Check if it's a string representation of a dict/list
+        stripped = content.strip()
+        if stripped.startswith('{') or stripped.startswith('['):
+            try:
+                import ast
+                parsed = ast.literal_eval(content)
+                return _ensure_string(parsed)
+            except (ValueError, SyntaxError):
+                pass
         return content
+    if isinstance(content, dict):
+        # Handle single dict: {'type': 'text', 'text': '...', 'extras': {...}}
+        if content.get('type') == 'text' and 'text' in content:
+            return content['text']
+        return str(content)
     if isinstance(content, list):
         # Handle Gemini's list format: [{'type': 'text', 'text': '...'}]
         text_parts = []
@@ -745,9 +759,27 @@ def update_research_team_status(status):
         message_buffer.update_agent_status(agent, status)
 
 def extract_content_string(content):
-    """Extract string content from various message formats."""
+    """Extract string content from various message formats, extracting only 'text' field."""
+    if content is None:
+        return ""
     if isinstance(content, str):
+        # Check if it's a string representation of a dict/list
+        stripped = content.strip()
+        if stripped.startswith('{') or stripped.startswith('['):
+            try:
+                import ast
+                parsed = ast.literal_eval(content)
+                return extract_content_string(parsed)
+            except (ValueError, SyntaxError):
+                pass
         return content
+    elif isinstance(content, dict):
+        # Handle single dict: {'type': 'text', 'text': '...', 'extras': {...}}
+        if content.get('type') == 'text' and 'text' in content:
+            return content['text']
+        elif content.get('type') == 'tool_use':
+            return f"[Tool: {content.get('name', 'unknown')}]"
+        return str(content)
     elif isinstance(content, list):
         # Handle Gemini/Anthropic's list format
         text_parts = []
@@ -827,11 +859,8 @@ def run_analysis():
                 if content:
                     file_name = f"{section_name}.md"
                     with open(report_dir / file_name, "w") as f:
-                        # Handle case where content is a list (e.g., from Gemini models)
-                        if isinstance(content, list):
-                            content_str = "\n\n".join(str(item) for item in content)
-                        else:
-                            content_str = str(content)
+                        # Use _ensure_string to extract proper text from Gemini's list format
+                        content_str = _ensure_string(content)
                         f.write(content_str)
         return wrapper
 

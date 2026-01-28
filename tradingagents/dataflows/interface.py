@@ -18,11 +18,25 @@ from .config import get_config, set_config, DATA_DIR
 
 
 def _extract_gemini_content(content):
-    """Extract string content from Gemini response (handles list format)."""
+    """Extract string content from Gemini response, extracting only 'text' field."""
     if content is None:
         return ""
     if isinstance(content, str):
+        # Check if it's a string representation of a dict/list
+        stripped = content.strip()
+        if stripped.startswith('{') or stripped.startswith('['):
+            try:
+                import ast
+                parsed = ast.literal_eval(content)
+                return _extract_gemini_content(parsed)
+            except (ValueError, SyntaxError):
+                pass
         return content
+    if isinstance(content, dict):
+        # Handle single dict: {'type': 'text', 'text': '...', 'extras': {...}}
+        if content.get('type') == 'text' and 'text' in content:
+            return content['text']
+        return str(content)
     if isinstance(content, list):
         # Handle Gemini's list format: [{'type': 'text', 'text': '...'}]
         text_parts = []
