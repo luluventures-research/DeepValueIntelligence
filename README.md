@@ -88,13 +88,13 @@ Our framework decomposes complex trading tasks into specialized roles. This ensu
 Clone TradingAgents:
 ```bash
 git clone https://github.com/luluventures-research/DeepValueIntelligence.git
-cd TradingAgents
+cd DeepValueIntelligence
 ```
 
 Create a virtual environment in any of your favorite environment managers:
 ```bash
-conda create -n tradingagents python=3.13
-conda activate tradingagents
+conda create -n DeepValueIntelligence python=3.13
+conda activate DeepValueIntelligence
 ```
 
 Install dependencies:
@@ -136,7 +136,7 @@ An interface will appear showing results as they load, letting you track the age
   <img src="assets/cli/cli_transaction.png" width="100%" style="display: inline-block; margin: 0 2%;">
 </p>
 
-## TradingAgents Package
+## DeepValueIntelligence Package
 
 ### Implementation Details
 
