@@ -42,7 +42,9 @@ DEFAULT_CONFIG = {
     # Debate and discussion settings
     "max_debate_rounds": 1,
     "max_risk_discuss_rounds": 1,
-    "max_recur_limit": 100,
+    "max_recur_limit": 200,
+    # Timeout settings (in seconds)
+    "llm_timeout": 900,
     # Tool settings
     "online_tools": True,
 }

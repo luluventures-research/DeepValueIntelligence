@@ -1,4 +1,5 @@
 import json
+import logging
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
@@ -11,6 +12,8 @@ from tenacity import (
     retry_if_exception_type,
     retry_if_result,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def is_rate_limited(response):
@@ -27,7 +30,7 @@ def make_request(url, headers):
     """Make a request with retry logic for rate limiting"""
     # Random delay before each request to avoid detection
     time.sleep(random.uniform(2, 6))
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=headers, timeout=600)
     return response
 
 
@@ -57,7 +60,10 @@ def getNewsData(query, start_date, end_date):
 
     news_results = []
     page = 0
-    while True:
+    max_pages = 100  # Safety limit to prevent infinite loops
+    while page < max_pages:
+        if page > 0 and page % 10 == 0:
+            logger.info(f"Google News scraping progress: page {page}/{max_pages}, {len(news_results)} results so far")
         offset = page * 10
         url = (
             f"https://www.google.com/search?q={query}"
@@ -68,14 +74,14 @@ def getNewsData(query, start_date, end_date):
         try:
             response = make_request(url, headers)
             if response.status_code != 200:
-                print(f"HTTP error {response.status_code} for URL: {url}")
+                logger.warning(f"HTTP error {response.status_code} for Google News URL: {url}")
                 break
-                
+
             soup = BeautifulSoup(response.content, "html.parser")
             results_on_page = soup.select("div.SoaBEf")
 
             if not results_on_page:
-                print(f"No results found on page {page + 1}, ending search.")
+                logger.debug(f"No results found on page {page + 1}, ending search.")
                 break  # No more results found
 
             for el in results_on_page:
@@ -112,11 +118,9 @@ def getNewsData(query, start_date, end_date):
                         }
                     )
                 except Exception as e:
-                    print(f"Error processing result: {e}")
+                    logger.debug(f"Error processing news result: {e}")
                     # If one of the fields is not found, skip this result
                     continue
-
-            # Update the progress bar with the current count of results scraped
 
             # Check for the "Next" link (pagination)
             next_link = soup.find("a", id="pnnext")
@@ -125,10 +129,21 @@ def getNewsData(query, start_date, end_date):
 
             page += 1
 
+        except requests.exceptions.Timeout:
+            logger.error(f"Request timeout on page {page + 1} for query: {query}")
+            break
         except Exception as e:
-            print(f"Failed after multiple retries: {e}")
+            logger.error(f"Failed after multiple retries: {e}")
             break
 
+    # Log warning if we hit the max pages limit
+    if page >= max_pages:
+        logger.warning(
+            f"Google News scraping hit max_pages limit ({max_pages})! "
+            f"Query: {query}, results collected: {len(news_results)}"
+        )
+
+    logger.info(f"Google News scraping complete: {len(news_results)} results for query: {query}")
     return news_results
 
 

@@ -81,6 +81,8 @@ class MessageBuffer:
             "Social Analyst": "pending",
             "News Analyst": "pending",
             "Fundamentals Analyst": "pending",
+            "Value Analyst": "pending",
+            "Growth Analyst": "pending",
             # Research Team
             "Bull Researcher": "pending",
             "Bear Researcher": "pending",
@@ -100,6 +102,8 @@ class MessageBuffer:
             "sentiment_report": None,
             "news_report": None,
             "fundamentals_report": None,
+            "value_report": None,
+            "growth_report": None,
             "investment_plan": None,
             "trader_investment_plan": None,
             "final_trade_decision": None,
@@ -141,6 +145,8 @@ class MessageBuffer:
                 "sentiment_report": "Social Sentiment",
                 "news_report": "News Analysis",
                 "fundamentals_report": "Fundamentals Analysis",
+                "value_report": "Value Analysis (Buffett)",
+                "growth_report": "Growth Analysis (Lynch/Druckenmiller/Fisher)",
                 "investment_plan": "Research Team Decision",
                 "trader_investment_plan": "Trading Team Plan",
                 "final_trade_decision": "Portfolio Management Decision",
@@ -165,6 +171,8 @@ class MessageBuffer:
                 "sentiment_report",
                 "news_report",
                 "fundamentals_report",
+                "value_report",
+                "growth_report",
             ]
         ):
             report_parts.append("## Analyst Team Reports")
@@ -183,6 +191,14 @@ class MessageBuffer:
             if self.report_sections["fundamentals_report"]:
                 report_parts.append(
                     f"### Fundamentals Analysis\n{_ensure_string(self.report_sections['fundamentals_report'])}"
+                )
+            if self.report_sections["value_report"]:
+                report_parts.append(
+                    f"### Value Analysis (Buffett)\n{_ensure_string(self.report_sections['value_report'])}"
+                )
+            if self.report_sections["growth_report"]:
+                report_parts.append(
+                    f"### Growth Analysis (Lynch/Druckenmiller/Fisher)\n{_ensure_string(self.report_sections['growth_report'])}"
                 )
 
         # Research Team Reports
@@ -256,6 +272,8 @@ def update_display(layout, spinner_text=None):
             "Social Analyst",
             "News Analyst",
             "Fundamentals Analyst",
+            "Value Analyst",
+            "Growth Analyst",
         ],
         "Research Team": ["Bull Researcher", "Bear Researcher", "Research Manager"],
         "Trading Team": ["Trader"],
@@ -562,6 +580,184 @@ def get_analysis_date():
             )
 
 
+def generate_comprehensive_report(final_state, ticker, analysis_date, report_dir):
+    """Generate a comprehensive markdown report combining all analysis."""
+    from datetime import datetime
+
+    report_lines = []
+
+    # Header
+    report_lines.append(f"# {ticker} Deep Value Intelligence")
+    report_lines.append("")
+    report_lines.append(f"**Analysis Date:** {analysis_date}")
+    report_lines.append(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    report_lines.append("")
+    report_lines.append("---")
+    report_lines.append("")
+
+    # Executive Summary / Final Decision
+    report_lines.append("## Executive Summary")
+    report_lines.append("")
+    if final_state.get("final_trade_decision"):
+        decision_content = _ensure_string(final_state["final_trade_decision"])
+        report_lines.append(decision_content)
+    else:
+        report_lines.append("*No final decision available.*")
+    report_lines.append("")
+    report_lines.append("---")
+    report_lines.append("")
+
+    # Table of Contents
+    report_lines.append("## Table of Contents")
+    report_lines.append("")
+    report_lines.append("1. [Executive Summary](#executive-summary)")
+    report_lines.append("2. [Analyst Team Reports](#analyst-team-reports)")
+    report_lines.append("   - [Market Analysis](#market-analysis)")
+    report_lines.append("   - [News Analysis](#news-analysis)")
+    report_lines.append("   - [Social Sentiment Analysis](#social-sentiment-analysis)")
+    report_lines.append("   - [Fundamentals Analysis](#fundamentals-analysis)")
+    report_lines.append("   - [Value Analysis (Buffett)](#value-analysis-buffett)")
+    report_lines.append("   - [Growth Analysis (Lynch/Druckenmiller/Fisher)](#growth-analysis-lynchdruckenmillerfisher)")
+    report_lines.append("3. [Research Team Decision](#research-team-decision)")
+    report_lines.append("4. [Trading Team Plan](#trading-team-plan)")
+    report_lines.append("5. [Final Investment Decision](#final-investment-decision)")
+    report_lines.append("")
+    report_lines.append("---")
+    report_lines.append("")
+
+    # Analyst Team Reports Section
+    report_lines.append("## Analyst Team Reports")
+    report_lines.append("")
+
+    # Market Analysis
+    report_lines.append("### Market Analysis")
+    report_lines.append("")
+    if final_state.get("market_report"):
+        report_lines.append(_ensure_string(final_state["market_report"]))
+    else:
+        report_lines.append("*No market analysis available.*")
+    report_lines.append("")
+    report_lines.append("---")
+    report_lines.append("")
+
+    # News Analysis
+    report_lines.append("### News Analysis")
+    report_lines.append("")
+    if final_state.get("news_report"):
+        report_lines.append(_ensure_string(final_state["news_report"]))
+    else:
+        report_lines.append("*No news analysis available.*")
+    report_lines.append("")
+    report_lines.append("---")
+    report_lines.append("")
+
+    # Social Sentiment Analysis
+    report_lines.append("### Social Sentiment Analysis")
+    report_lines.append("")
+    if final_state.get("sentiment_report"):
+        report_lines.append(_ensure_string(final_state["sentiment_report"]))
+    else:
+        report_lines.append("*No sentiment analysis available.*")
+    report_lines.append("")
+    report_lines.append("---")
+    report_lines.append("")
+
+    # Fundamentals Analysis
+    report_lines.append("### Fundamentals Analysis")
+    report_lines.append("")
+    if final_state.get("fundamentals_report"):
+        report_lines.append(_ensure_string(final_state["fundamentals_report"]))
+    else:
+        report_lines.append("*No fundamentals analysis available.*")
+    report_lines.append("")
+    report_lines.append("---")
+    report_lines.append("")
+
+    # Value Analysis (Buffett)
+    report_lines.append("### Value Analysis (Buffett)")
+    report_lines.append("")
+    report_lines.append("> *Following Warren Buffett's value investing philosophy: Circle of Competence, Economic Moat, Management Quality, and Margin of Safety.*")
+    report_lines.append("")
+    if final_state.get("value_report"):
+        report_lines.append(_ensure_string(final_state["value_report"]))
+    else:
+        report_lines.append("*No value analysis available.*")
+    report_lines.append("")
+    report_lines.append("---")
+    report_lines.append("")
+
+    # Growth Analysis (Lynch/Druckenmiller/Fisher)
+    report_lines.append("### Growth Analysis (Lynch/Druckenmiller/Fisher)")
+    report_lines.append("")
+    report_lines.append("> *Following Peter Lynch's GARP, Stanley Druckenmiller's macro-aware approach, and Philip Fisher's scuttlebutt methodology.*")
+    report_lines.append("")
+    if final_state.get("growth_report"):
+        report_lines.append(_ensure_string(final_state["growth_report"]))
+    else:
+        report_lines.append("*No growth analysis available.*")
+    report_lines.append("")
+    report_lines.append("---")
+    report_lines.append("")
+
+    # Research Team Decision
+    report_lines.append("## Research Team Decision")
+    report_lines.append("")
+    report_lines.append("> *The Research Manager synthesizes the Bull vs Bear debate to provide a recommendation.*")
+    report_lines.append("")
+    if final_state.get("investment_plan"):
+        report_lines.append(_ensure_string(final_state["investment_plan"]))
+    else:
+        report_lines.append("*No research team decision available.*")
+    report_lines.append("")
+    report_lines.append("---")
+    report_lines.append("")
+
+    # Trading Team Plan
+    report_lines.append("## Trading Team Plan")
+    report_lines.append("")
+    report_lines.append("> *The Trader creates a specific investment plan based on the research team's analysis.*")
+    report_lines.append("")
+    if final_state.get("trader_investment_plan"):
+        report_lines.append(_ensure_string(final_state["trader_investment_plan"]))
+    else:
+        report_lines.append("*No trading plan available.*")
+    report_lines.append("")
+    report_lines.append("---")
+    report_lines.append("")
+
+    # Final Investment Decision
+    report_lines.append("## Final Investment Decision")
+    report_lines.append("")
+    report_lines.append("> *The Risk Management Team (Aggressive, Conservative, Neutral) debates and the Portfolio Manager makes the final decision.*")
+    report_lines.append("")
+    if final_state.get("final_trade_decision"):
+        report_lines.append(_ensure_string(final_state["final_trade_decision"]))
+    else:
+        report_lines.append("*No final decision available.*")
+    report_lines.append("")
+    report_lines.append("---")
+    report_lines.append("")
+
+    # Footer
+    report_lines.append("## Disclaimer")
+    report_lines.append("")
+    report_lines.append("*This analysis is generated by Deep Value Intelligence, an AI-powered multi-agent trading framework. ")
+    report_lines.append("This report is for informational and educational purposes only and does not constitute financial advice. ")
+    report_lines.append("Always conduct your own research and consult with qualified financial advisors before making investment decisions.*")
+    report_lines.append("")
+    report_lines.append("---")
+    report_lines.append("")
+    report_lines.append(f"*Report generated by Deep Value Intelligence on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*")
+
+    # Write the comprehensive report
+    comprehensive_report = "\n".join(report_lines)
+    report_path = report_dir / f"{ticker}_deep_value_intelligence_{analysis_date}.md"
+    with open(report_path, "w") as f:
+        f.write(comprehensive_report)
+
+    return report_path
+
+
 def display_complete_report(final_state):
     """Display the complete analysis report with team-based panels."""
     console.print("\n[bold green]Complete Analysis Report[/bold green]\n")
@@ -609,6 +805,28 @@ def display_complete_report(final_state):
                 safe_markdown(final_state["fundamentals_report"]),
                 title="Fundamentals Analyst",
                 border_style="blue",
+                padding=(1, 2),
+            )
+        )
+
+    # Value Analyst Report (Buffett methodology)
+    if final_state.get("value_report"):
+        analyst_reports.append(
+            Panel(
+                safe_markdown(final_state["value_report"]),
+                title="Value Analyst (Buffett)",
+                border_style="magenta",
+                padding=(1, 2),
+            )
+        )
+
+    # Growth Analyst Report (Lynch/Druckenmiller/Fisher methodology)
+    if final_state.get("growth_report"):
+        analyst_reports.append(
+            Panel(
+                safe_markdown(final_state["growth_report"]),
+                title="Growth Analyst (Lynch/Druckenmiller/Fisher)",
+                border_style="green",
                 padding=(1, 2),
             )
         )
@@ -984,7 +1202,39 @@ def run_analysis():
                     message_buffer.update_agent_status(
                         "Fundamentals Analyst", "completed"
                     )
-                    # Set all research team members to in_progress
+                    # Set next analyst to in_progress
+                    if "value" in selections["analysts"]:
+                        message_buffer.update_agent_status(
+                            "Value Analyst", "in_progress"
+                        )
+                    elif "growth" in selections["analysts"]:
+                        message_buffer.update_agent_status(
+                            "Growth Analyst", "in_progress"
+                        )
+                    else:
+                        # No more analysts, move to research team
+                        update_research_team_status("in_progress")
+
+                if "value_report" in chunk and chunk["value_report"]:
+                    message_buffer.update_report_section(
+                        "value_report", chunk["value_report"]
+                    )
+                    message_buffer.update_agent_status("Value Analyst", "completed")
+                    # Set next analyst to in_progress
+                    if "growth" in selections["analysts"]:
+                        message_buffer.update_agent_status(
+                            "Growth Analyst", "in_progress"
+                        )
+                    else:
+                        # No more analysts, move to research team
+                        update_research_team_status("in_progress")
+
+                if "growth_report" in chunk and chunk["growth_report"]:
+                    message_buffer.update_report_section(
+                        "growth_report", chunk["growth_report"]
+                    )
+                    message_buffer.update_agent_status("Growth Analyst", "completed")
+                    # All analysts done, move to research team
                     update_research_team_status("in_progress")
 
                 # Research Team - Handle Investment Debate State
@@ -1161,6 +1411,15 @@ def run_analysis():
         for section in message_buffer.report_sections.keys():
             if section in final_state:
                 message_buffer.update_report_section(section, final_state[section])
+
+        # Generate comprehensive report
+        comprehensive_report_path = generate_comprehensive_report(
+            final_state,
+            selections["ticker"],
+            selections["analysis_date"],
+            report_dir
+        )
+        console.print(f"\n[green]Comprehensive report saved to:[/green] {comprehensive_report_path}")
 
         # Display the complete final report
         display_complete_report(final_state)

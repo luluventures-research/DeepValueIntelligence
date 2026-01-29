@@ -8,6 +8,8 @@ ANALYST_ORDER = [
     ("Social Media Analyst", AnalystType.SOCIAL),
     ("News Analyst", AnalystType.NEWS),
     ("Fundamentals Analyst", AnalystType.FUNDAMENTALS),
+    ("Value Analyst (Buffett)", AnalystType.VALUE),
+    ("Growth Analyst (Lynch/Druckenmiller/Fisher)", AnalystType.GROWTH),
 ]
 
 
@@ -137,9 +139,9 @@ def select_shallow_thinking_agent(provider) -> str:
             ("Claude 3.5 Sonnet - Highly capable standard model", "claude-3-5-sonnet-latest"),
         ],
         "google": [
-            ("Gemini 3 Flash - Pro-grade reasoning at Flash-level speed (Preview)", "gemini-3-flash-preview"),
-            ("Gemini 2.5 Flash - Adaptive thinking, cost efficiency", "gemini-2.5-flash-preview-04-17"),
-            ("Gemini 2.0 Flash - Deprecated March 2026", "gemini-2.0-flash"),
+            ("Gemini 3 Flash - Pro-grade reasoning at Flash speed (Recommended)", "gemini-3-flash-preview"),
+            ("Gemini 2.5 Flash - Adaptive thinking, cost efficiency", "gemini-2.5-flash"),
+            ("Gemini 2.5 Flash Lite - Fast, low-cost, high-performance", "gemini-2.5-flash-lite"),
         ],
         "openrouter": [
             ("Mistral 7B Instruct - A lightweight and ultra-fast model", "mistralai/mistral-7b-instruct:free"),
@@ -192,9 +194,10 @@ def select_deep_thinking_agent(provider) -> str:
             ("Claude 4.1 Opus - Most powerful Anthropic model", "claude-opus-4-1"),
         ],
         "google": [
-            ("Gemini 3 Pro - State-of-the-art reasoning and multimodal (Preview)", "gemini-3-pro-preview"),
-            ("Gemini 2.5 Pro - Advanced model with 1M token context window", "gemini-2.5-pro-preview-05-06"),
-            ("Gemini 3 Flash - Pro-grade reasoning at Flash speed (Preview)", "gemini-3-flash-preview"),
+            ("Gemini 3 Pro - State-of-the-art reasoning and multimodal (Recommended)", "gemini-3-pro-preview"),
+            ("Gemini 3 Flash - Pro-grade reasoning at Flash speed", "gemini-3-flash-preview"),
+            ("Gemini 2.5 Pro - Advanced model with 1M token context", "gemini-2.5-pro"),
+            ("Gemini 2.5 Flash - Adaptive thinking, cost efficiency", "gemini-2.5-flash"),
         ],
         "openrouter": [
             ("Nous Hermes 2 - Mixtral 8x7B DPO", "nousresearch/nous-hermes-2-mixtral-8x7b-dpo"),

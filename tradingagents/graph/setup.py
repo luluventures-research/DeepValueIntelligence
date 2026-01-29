@@ -41,7 +41,7 @@ class GraphSetup:
         self.conditional_logic = conditional_logic
 
     def setup_graph(
-        self, selected_analysts=["market", "social", "news", "fundamentals"]
+        self, selected_analysts=["market", "social", "news", "fundamentals", "value", "growth"]
     ):
         """Set up and compile the agent workflow graph.
 
@@ -51,6 +51,8 @@ class GraphSetup:
                 - "social": Social media analyst
                 - "news": News analyst
                 - "fundamentals": Fundamentals analyst
+                - "value": Deep Value analyst (Buffett methodology)
+                - "growth": Growth analyst (Lynch/Druckenmiller/Fisher methodology)
         """
         if len(selected_analysts) == 0:
             raise ValueError("Trading Agents Graph Setup Error: no analysts selected!")
@@ -87,6 +89,20 @@ class GraphSetup:
             )
             delete_nodes["fundamentals"] = create_msg_delete()
             tool_nodes["fundamentals"] = self.tool_nodes["fundamentals"]
+
+        if "value" in selected_analysts:
+            analyst_nodes["value"] = create_value_analyst(
+                self.deep_thinking_llm, self.toolkit
+            )
+            delete_nodes["value"] = create_msg_delete()
+            tool_nodes["value"] = self.tool_nodes["value"]
+
+        if "growth" in selected_analysts:
+            analyst_nodes["growth"] = create_growth_analyst(
+                self.deep_thinking_llm, self.toolkit
+            )
+            delete_nodes["growth"] = create_msg_delete()
+            tool_nodes["growth"] = self.tool_nodes["growth"]
 
         # Create researcher and manager nodes
         bull_researcher_node = create_bull_researcher(

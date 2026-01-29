@@ -1,5 +1,6 @@
 # TradingAgents/graph/trading_graph.py
 
+import logging
 import os
 from pathlib import Path
 import json
@@ -7,6 +8,8 @@ from datetime import date
 from typing import Dict, Any, Tuple, List, Optional
 
 from langchain_openai import ChatOpenAI
+
+logger = logging.getLogger(__name__)
 from langchain_anthropic import ChatAnthropic
 from langchain_google_genai import ChatGoogleGenerativeAI
 
@@ -34,7 +37,7 @@ class TradingAgentsGraph:
 
     def __init__(
         self,
-        selected_analysts=["market", "social", "news", "fundamentals"],
+        selected_analysts=["market", "social", "news", "fundamentals", "value", "growth"],
         debug=False,
         config: Dict[str, Any] = None,
     ):
@@ -88,7 +91,7 @@ class TradingAgentsGraph:
             self.conditional_logic,
         )
 
-        self.propagator = Propagator()
+        self.propagator = Propagator(max_recur_limit=self.config.get("max_recur_limit", 200))
         self.reflector = Reflector(self.quick_thinking_llm)
         self.signal_processor = SignalProcessor(self.quick_thinking_llm)
 
@@ -102,14 +105,25 @@ class TradingAgentsGraph:
 
     def _create_llm(self, model_name: str):
         """Create the appropriate LLM client based on model name and configuration."""
+        # Get timeout from config (default: 900 seconds)
+        llm_timeout = self.config.get("llm_timeout", 900)
+        logger.info(f"Creating LLM client: model={model_name}, timeout={llm_timeout}s")
+
         # Determine provider based on model name
         if model_name.startswith("gemini") or model_name.startswith("google"):
             # Google Gemini models
+            # Note: ChatGoogleGenerativeAI has a known bug where timeout isn't always respected
+            # See: https://github.com/langchain-ai/langchain-google/issues/731
+            # We set timeout and max_retries, but timeout may not work reliably
             if not self.config.get("google_api_key"):
                 raise ValueError("GOOGLE_API_KEY environment variable is required for Gemini models")
+
             return ChatGoogleGenerativeAI(
                 model=model_name,
-                google_api_key=self.config["google_api_key"]
+                google_api_key=self.config["google_api_key"],
+                timeout=llm_timeout,
+                max_retries=2,  # Reduce retries to avoid compounding timeouts
+                transport="rest",  # Use REST transport
             )
         elif model_name.startswith("claude") or self.config["llm_provider"].lower() == "anthropic":
             # Anthropic Claude models
@@ -118,17 +132,19 @@ class TradingAgentsGraph:
             return ChatAnthropic(
                 model=model_name,
                 api_key=self.config["anthropic_api_key"],
-                base_url=self.config.get("backend_url", "https://api.anthropic.com")
+                base_url=self.config.get("backend_url", "https://api.anthropic.com"),
+                timeout=llm_timeout,
             )
         else:
             # OpenAI models (including OpenAI-compatible APIs like Ollama)
             api_key = self.config.get("openai_api_key", "ollama")  # Default for Ollama
             base_url = self.config.get("openai_api_base", self.config.get("backend_url", "https://api.openai.com/v1"))
-            
+
             return ChatOpenAI(
                 model=model_name,
                 api_key=api_key,
-                base_url=base_url
+                base_url=base_url,
+                request_timeout=llm_timeout,
             )
 
     def _create_tool_nodes(self) -> Dict[str, ToolNode]:
@@ -194,12 +210,42 @@ class TradingAgentsGraph:
                     self.toolkit.get_simfin_income_stmt,
                 ]
             ),
+            "value": ToolNode(
+                [
+                    # enhanced fundamental analysis tool (primary)
+                    self.toolkit.get_enhanced_fundamentals,
+                    # online tools
+                    fundamentals_tool,
+                    # offline tools
+                    self.toolkit.get_finnhub_company_insider_sentiment,
+                    self.toolkit.get_finnhub_company_insider_transactions,
+                    self.toolkit.get_simfin_balance_sheet,
+                    self.toolkit.get_simfin_cashflow,
+                    self.toolkit.get_simfin_income_stmt,
+                ]
+            ),
+            "growth": ToolNode(
+                [
+                    # enhanced fundamental analysis tool (primary)
+                    self.toolkit.get_enhanced_fundamentals,
+                    # online tools
+                    fundamentals_tool,
+                    # offline tools
+                    self.toolkit.get_finnhub_company_insider_sentiment,
+                    self.toolkit.get_finnhub_company_insider_transactions,
+                    self.toolkit.get_simfin_balance_sheet,
+                    self.toolkit.get_simfin_cashflow,
+                    self.toolkit.get_simfin_income_stmt,
+                ]
+            ),
         }
 
     def propagate(self, company_name, trade_date):
         """Run the trading agents graph for a company on a specific date."""
 
         self.ticker = company_name
+        logger.info(f"Starting analysis for {company_name} on {trade_date}")
+        logger.info(f"Recursion limit: {self.propagator.max_recur_limit}")
 
         # Initialize state
         init_agent_state = self.propagator.create_initial_state(
@@ -207,20 +253,36 @@ class TradingAgentsGraph:
         )
         args = self.propagator.get_graph_args()
 
-        if self.debug:
-            # Debug mode with tracing
-            trace = []
-            for chunk in self.graph.stream(init_agent_state, **args):
-                if len(chunk["messages"]) == 0:
-                    pass
-                else:
-                    chunk["messages"][-1].pretty_print()
-                    trace.append(chunk)
+        try:
+            if self.debug:
+                # Debug mode with tracing
+                trace = []
+                for chunk in self.graph.stream(init_agent_state, **args):
+                    if len(chunk["messages"]) == 0:
+                        pass
+                    else:
+                        chunk["messages"][-1].pretty_print()
+                        trace.append(chunk)
 
-            final_state = trace[-1]
-        else:
-            # Standard mode without tracing
-            final_state = self.graph.invoke(init_agent_state, **args)
+                final_state = trace[-1]
+            else:
+                # Standard mode without tracing
+                final_state = self.graph.invoke(init_agent_state, **args)
+
+            logger.info(f"Analysis completed successfully for {company_name}")
+        except Exception as e:
+            error_type = type(e).__name__
+            # Check for timeout-related errors
+            if "Timeout" in error_type or "timeout" in str(e).lower():
+                logger.error(
+                    f"Timeout error during analysis for {company_name}: {error_type}: {e}. "
+                    "This may be due to slow API responses. Consider increasing llm_timeout in config "
+                    "or using a different model. Note: ChatGoogleGenerativeAI has a known timeout bug "
+                    "(see https://github.com/langchain-ai/langchain-google/issues/731)"
+                )
+            else:
+                logger.error(f"Analysis failed for {company_name}: {error_type}: {e}")
+            raise
 
         # Store current state for reflection
         self.curr_state = final_state
@@ -240,6 +302,8 @@ class TradingAgentsGraph:
             "sentiment_report": final_state["sentiment_report"],
             "news_report": final_state["news_report"],
             "fundamentals_report": final_state["fundamentals_report"],
+            "value_report": final_state.get("value_report", ""),
+            "growth_report": final_state.get("growth_report", ""),
             "investment_debate_state": {
                 "bull_history": final_state["investment_debate_state"]["bull_history"],
                 "bear_history": final_state["investment_debate_state"]["bear_history"],
