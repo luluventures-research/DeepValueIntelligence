@@ -9,6 +9,24 @@ def create_fundamentals_analyst(llm, toolkit):
         ticker = state["company_of_interest"]
         company_name = state["company_of_interest"]
 
+        # Use the deep_think_llm for the fundamentals analyst
+        llm_provider = toolkit.config.get("llm_provider", "openai")
+        if llm_provider == "google":
+            from langchain_google_genai import ChatGoogleGenerativeAI
+            deep_think_llm_name = toolkit.config.get("deep_think_llm", "gemini-pro")
+            llm = ChatGoogleGenerativeAI(model=deep_think_llm_name,
+                                         google_api_key=toolkit.config.get("google_api_key"),
+                                         temperature=0,
+                                         )
+        else: # openai
+            from langchain_openai import ChatOpenAI
+            deep_think_llm_name = toolkit.config.get("deep_think_llm", "gpt-4-turbo")
+            llm = ChatOpenAI(model=deep_think_llm_name,
+                             api_key=toolkit.config.get("openai_api_key"),
+                             base_url=toolkit.config.get("openai_api_base"),
+                             temperature=0,
+                             )
+
         if toolkit.config["online_tools"]:
             # Determine which fundamentals tool to use based on model configuration
             deep_model = toolkit.config.get("deep_think_llm", "")
