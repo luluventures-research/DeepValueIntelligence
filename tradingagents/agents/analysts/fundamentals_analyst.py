@@ -9,24 +9,6 @@ def create_fundamentals_analyst(llm, toolkit):
         ticker = state["company_of_interest"]
         company_name = state["company_of_interest"]
 
-        # Use the deep_think_llm for the fundamentals analyst
-        llm_provider = toolkit.config.get("llm_provider", "openai")
-        if llm_provider == "google":
-            from langchain_google_genai import ChatGoogleGenerativeAI
-            deep_think_llm_name = toolkit.config.get("deep_think_llm", "gemini-pro")
-            llm = ChatGoogleGenerativeAI(model=deep_think_llm_name,
-                                         google_api_key=toolkit.config.get("google_api_key"),
-                                         temperature=0,
-                                         )
-        else: # openai
-            from langchain_openai import ChatOpenAI
-            deep_think_llm_name = toolkit.config.get("deep_think_llm", "gpt-4-turbo")
-            llm = ChatOpenAI(model=deep_think_llm_name,
-                             api_key=toolkit.config.get("openai_api_key"),
-                             base_url=toolkit.config.get("openai_api_base"),
-                             temperature=0,
-                             )
-
         if toolkit.config["online_tools"]:
             # Determine which fundamentals tool to use based on model configuration
             deep_model = toolkit.config.get("deep_think_llm", "")
@@ -52,39 +34,38 @@ def create_fundamentals_analyst(llm, toolkit):
 
         system_message = (
             "You are a quantitative fundamental analyst specializing in Warren Buffett's value investing methodology. "
-            "Conduct a comprehensive 20-year historical analysis of the company's financial metrics.\n\n"
+            "Conduct a comprehensive 10-year historical analysis of the company's financial metrics.\n\n"
             
-            "REQUIRED ANALYSIS - Collect and analyze the following metrics for the PAST 20 YEARS:\n"
-            "1. Market Metrics: Market Price, Total Market Cap, P/E Ratio, P/B Ratio, EV/EBITDA, Price to Free Cash Flow (P/FCF)\n"
-            "2. Profitability: Return on Equity (ROE), Return on Invested Capital (ROIC), EPS, Revenue, Gross Profit, Gross Margin, Operating Margin, Net Income, Net Margin, Net Margin Gain\n"
-            "3. Efficiency: Asset Turnover, Inventory Turnover, Cash Conversion Cycle (CCC)\n"
-            "4. Growth Metrics: Revenue Growth Rate, Net Income Growth Rate, Free Cash Flow Growth Rate, Cash Flow for Owner Growth Rate\n"
-            "5. Balance Sheet: Total Book Value, Total Assets, Total Debt, Debt-to-Equity Ratio, Debt-to-Asset Ratio, Cash/Cash Equivalents, Shareholder's Equity\n"
-            "6. Cash Flow: Free Cash Flow, Operating Cash Flow to Sales, Dividends per Share, Share Buybacks, Share Dilution\n\n"
+            "REQUIRED ANALYSIS - Collect and analyze the following metrics for the PAST 10 YEARS:\n"
+            "1. Market Metrics: Market Price, Total Market Cap, P/E Ratio, P/B Ratio\n"
+            "2. Profitability: Return on Equity (ROE), Return on Invested Capital (ROIC), EPS, Revenue, Gross Profit, Operating Margin, Net Income, Net Margin, Net Margin Gain\n"
+            "3. Growth Metrics: Revenue Growth Rate, Net Income Growth Rate, Free Cash Flow Growth Rate, Cash Flow for Owner Growth Rate\n"
+            "4. Balance Sheet: Total Book Value, Total Assets, Total Debt, Debt-to-Equity Ratio, Debt-to-Asset Ratio, Cash/Cash Equivalents, Shareholder's Equity\n"
+            "5. Cash Flow: Free Cash Flow, Dividends per Share\n\n"
             
             "DATA VALIDATION: Cross-validate financial data from multiple trusted sources when available.\n\n"
             
-            "COMPARATIVE ANALYSIS: For each metric, compare current values with 20-year averages and explain:\n"
+            "COMPARATIVE ANALYSIS: For each metric, compare current values with 10-year averages and explain:\n"
             "- Current standing relative to historical performance\n"
-            "- Trends and patterns over two decades\n"
+            "- Trends and patterns over the decade\n"
             "- Significance of deviations from historical norms\n\n"
             
             "WARREN BUFFETT VALUE INVESTING ANALYSIS:\n"
             "- Economic Moat: Assess competitive advantages and business durability\n"
             "- Financial Strength: Analyze debt levels, cash position, and financial stability\n"
-            "- Predictable Earnings: Evaluate consistency and reliability of earnings over 20 years\n"
-            "- Management Performance: ROE trends, capital allocation efficiency (including dividends and buybacks), and share dilution\n"
+            "- Predictable Earnings: Evaluate consistency and reliability of earnings over 10 years\n"
+            "- Management Performance: ROE trends, capital allocation efficiency, dividend policy\n"
             "- Value Assessment: Compare current valuation to historical averages and intrinsic value\n"
             "- Quality of Business: Revenue predictability, margin stability, competitive position\n\n"
             
             "DISCOUNTED CASH FLOW (DCF) ANALYSIS - Calculate fair value using three scenarios:\n"
-            "1. CONSERVATIVE: Use the LOWEST free cash flow growth rate from the past 20 years\n"
-            "2. AVERAGE: Use the AVERAGE free cash flow growth rate from the past 20 years\n" 
-            "3. OPTIMISTIC: Use the HIGHEST free cash flow growth rate from the past 20 years\n"
+            "1. CONSERVATIVE: Use the LOWEST free cash flow growth rate from the past 10 years\n"
+            "2. AVERAGE: Use the AVERAGE free cash flow growth rate from the past 10 years\n" 
+            "3. OPTIMISTIC: Use the HIGHEST free cash flow growth rate from the past 10 years\n"
             "For each scenario, use a 10% discount rate and 2.5% terminal growth rate. Show detailed calculations.\n\n"
             
             "DELIVERABLES:\n"
-            "- 20-year comprehensive historical data table with all required metrics\n"
+            "- 10-year comprehensive historical data table with all required metrics\n"
             "- Warren Buffett-style qualitative analysis with specific insights\n"
             "- Three-scenario DCF valuation with detailed calculations and fair value ranges\n"
             "- Current vs historical average comparison table\n"
