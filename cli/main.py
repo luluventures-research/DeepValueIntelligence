@@ -77,12 +77,12 @@ class MessageBuffer:
         self.final_report = None  # Store the complete final report
         self.agent_status = {
             # Analyst Team
-            "Market Analyst": "pending",
-            "Social Analyst": "pending",
-            "News Analyst": "pending",
             "Fundamentals Analyst": "pending",
             "Value Analyst": "pending",
             "Growth Analyst": "pending",
+            "Market Analyst": "pending",
+            "Social Analyst": "pending",
+            "News Analyst": "pending",
             # Research Team
             "Bull Researcher": "pending",
             "Bear Researcher": "pending",
@@ -149,7 +149,7 @@ class MessageBuffer:
                 "growth_report": "Growth Analysis (Lynch/Druckenmiller/Fisher)",
                 "investment_plan": "Research Team Decision",
                 "trader_investment_plan": "Trading Team Plan",
-                "final_trade_decision": "Portfolio Management Decision",
+                "final_trade_decision": "AI Investing Strategy",
             }
             # Ensure content is a string (handle Gemini list format)
             content_str = _ensure_string(latest_content)
@@ -167,27 +167,15 @@ class MessageBuffer:
         if any(
             self.report_sections[section]
             for section in [
-                "market_report",
-                "sentiment_report",
-                "news_report",
                 "fundamentals_report",
                 "value_report",
                 "growth_report",
+                "market_report",
+                "sentiment_report",
+                "news_report",
             ]
         ):
             report_parts.append("## Analyst Team Reports")
-            if self.report_sections["market_report"]:
-                report_parts.append(
-                    f"### Market Analysis\n{_ensure_string(self.report_sections['market_report'])}"
-                )
-            if self.report_sections["sentiment_report"]:
-                report_parts.append(
-                    f"### Social Sentiment\n{_ensure_string(self.report_sections['sentiment_report'])}"
-                )
-            if self.report_sections["news_report"]:
-                report_parts.append(
-                    f"### News Analysis\n{_ensure_string(self.report_sections['news_report'])}"
-                )
             if self.report_sections["fundamentals_report"]:
                 report_parts.append(
                     f"### Fundamentals Analysis\n{_ensure_string(self.report_sections['fundamentals_report'])}"
@@ -200,6 +188,18 @@ class MessageBuffer:
                 report_parts.append(
                     f"### Growth Analysis (Lynch/Druckenmiller/Fisher)\n{_ensure_string(self.report_sections['growth_report'])}"
                 )
+            if self.report_sections["market_report"]:
+                report_parts.append(
+                    f"### Market Analysis\n{_ensure_string(self.report_sections['market_report'])}"
+                )
+            if self.report_sections["sentiment_report"]:
+                report_parts.append(
+                    f"### Social Sentiment\n{_ensure_string(self.report_sections['sentiment_report'])}"
+                )
+            if self.report_sections["news_report"]:
+                report_parts.append(
+                    f"### News Analysis\n{_ensure_string(self.report_sections['news_report'])}"
+                )
 
         # Research Team Reports
         if self.report_sections["investment_plan"]:
@@ -211,9 +211,9 @@ class MessageBuffer:
             report_parts.append("## Trading Team Plan")
             report_parts.append(f"{_ensure_string(self.report_sections['trader_investment_plan'])}")
 
-        # Portfolio Management Decision
+        # AI Investing Strategy
         if self.report_sections["final_trade_decision"]:
-            report_parts.append("## Portfolio Management Decision")
+            report_parts.append("## AI Investing Strategy")
             report_parts.append(f"{_ensure_string(self.report_sections['final_trade_decision'])}")
 
         self.final_report = "\n\n".join(report_parts) if report_parts else None
@@ -268,12 +268,12 @@ def update_display(layout, spinner_text=None):
     # Group agents by team
     teams = {
         "Analyst Team": [
-            "Market Analyst",
-            "Social Analyst",
-            "News Analyst",
             "Fundamentals Analyst",
             "Value Analyst",
             "Growth Analyst",
+            "Market Analyst",
+            "Social Analyst",
+            "News Analyst",
         ],
         "Research Team": ["Bull Researcher", "Bear Researcher", "Research Manager"],
         "Trading Team": ["Trader"],
@@ -580,6 +580,40 @@ def get_analysis_date():
             )
 
 
+def _filter_trading_recommendations(content: str) -> str:
+    """
+    Filter out explicit BUY/SELL/HOLD recommendations from content for the AI Executive Summary.
+    Removes lines containing explicit trading decisions while preserving the analysis.
+    """
+    import re
+
+    if not content:
+        return content
+
+    lines = content.split('\n')
+    filtered_lines = []
+
+    # Patterns to filter out (case-insensitive)
+    skip_patterns = [
+        r'^\s*\*{0,2}(FINAL\s+)?(DECISION|RECOMMENDATION|VERDICT)\s*:\s*\*{0,2}\s*(BUY|SELL|HOLD|STRONG\s+BUY|STRONG\s+SELL)',
+        r'^\s*\*{0,2}(The\s+)?(recommendation|decision)\s+(is\s+to\s+)?(BUY|SELL|HOLD)',
+        r'^\s*\*{0,2}(TRANSACTION\s+PROPOSAL)\s*:\s*\*{0,2}\s*(BUY|SELL|HOLD)',
+        r'^\s*-?\s*\*{0,2}Action\s*:\s*\*{0,2}\s*(BUY|SELL|HOLD)',
+        r'^\s*>\s*\*{0,2}(DECISION|RECOMMENDATION)\s*:\s*(BUY|SELL|HOLD)',
+    ]
+
+    for line in lines:
+        skip_line = False
+        for pattern in skip_patterns:
+            if re.search(pattern, line, re.IGNORECASE):
+                skip_line = True
+                break
+        if not skip_line:
+            filtered_lines.append(line)
+
+    return '\n'.join(filtered_lines)
+
+
 def generate_comprehensive_report(final_state, ticker, analysis_date, report_dir):
     """Generate a comprehensive markdown report combining all analysis."""
     from datetime import datetime
@@ -595,71 +629,40 @@ def generate_comprehensive_report(final_state, ticker, analysis_date, report_dir
     report_lines.append("---")
     report_lines.append("")
 
-    # Executive Summary / Final Decision
-    report_lines.append("## Executive Summary")
+    # Table of Contents
+    report_lines.append("## Table of Contents")
     report_lines.append("")
-    if final_state.get("final_trade_decision"):
-        decision_content = _ensure_string(final_state["final_trade_decision"])
-        report_lines.append(decision_content)
-    else:
-        report_lines.append("*No final decision available.*")
+    report_lines.append("1. [AI Executive Summary](#ai-executive-summary)")
+    report_lines.append("2. [Analyst Team Reports](#analyst-team-reports)")
+    report_lines.append("   - [Fundamentals Analysis](#fundamentals-analysis)")
+    report_lines.append("   - [Value Analysis (Buffett)](#value-analysis-buffett)")
+    report_lines.append("   - [Growth Analysis (Lynch/Druckenmiller/Fisher)](#growth-analysis-lynchdruckenmillerfisher)")
+    report_lines.append("   - [Market Analysis](#market-analysis)")
+    report_lines.append("   - [Social Sentiment Analysis](#social-sentiment-analysis)")
+    report_lines.append("   - [News Analysis](#news-analysis)")
+    report_lines.append("3. [Research Team Decision](#research-team-decision)")
+    report_lines.append("4. [Trading Team Plan](#trading-team-plan)")
+    report_lines.append("5. [AI Investing Strategy](#ai-investing-strategy)")
     report_lines.append("")
     report_lines.append("---")
     report_lines.append("")
 
-    # Table of Contents
-    report_lines.append("## Table of Contents")
+    # AI Executive Summary (with BUY/SELL/HOLD recommendations filtered out)
+    report_lines.append("## AI Executive Summary")
     report_lines.append("")
-    report_lines.append("1. [Executive Summary](#executive-summary)")
-    report_lines.append("2. [Analyst Team Reports](#analyst-team-reports)")
-    report_lines.append("   - [Market Analysis](#market-analysis)")
-    report_lines.append("   - [News Analysis](#news-analysis)")
-    report_lines.append("   - [Social Sentiment Analysis](#social-sentiment-analysis)")
-    report_lines.append("   - [Fundamentals Analysis](#fundamentals-analysis)")
-    report_lines.append("   - [Value Analysis (Buffett)](#value-analysis-buffett)")
-    report_lines.append("   - [Growth Analysis (Lynch/Druckenmiller/Fisher)](#growth-analysis-lynchdruckenmillerfisher)")
-    report_lines.append("3. [Research Team Decision](#research-team-decision)")
-    report_lines.append("4. [Trading Team Plan](#trading-team-plan)")
-    report_lines.append("5. [Final Investment Decision](#final-investment-decision)")
+    if final_state.get("final_trade_decision"):
+        decision_content = _ensure_string(final_state["final_trade_decision"])
+        # Filter out explicit BUY/SELL/HOLD recommendations
+        filtered_content = _filter_trading_recommendations(decision_content)
+        report_lines.append(filtered_content)
+    else:
+        report_lines.append("*No executive summary available.*")
     report_lines.append("")
     report_lines.append("---")
     report_lines.append("")
 
     # Analyst Team Reports Section
     report_lines.append("## Analyst Team Reports")
-    report_lines.append("")
-
-    # Market Analysis
-    report_lines.append("### Market Analysis")
-    report_lines.append("")
-    if final_state.get("market_report"):
-        report_lines.append(_ensure_string(final_state["market_report"]))
-    else:
-        report_lines.append("*No market analysis available.*")
-    report_lines.append("")
-    report_lines.append("---")
-    report_lines.append("")
-
-    # News Analysis
-    report_lines.append("### News Analysis")
-    report_lines.append("")
-    if final_state.get("news_report"):
-        report_lines.append(_ensure_string(final_state["news_report"]))
-    else:
-        report_lines.append("*No news analysis available.*")
-    report_lines.append("")
-    report_lines.append("---")
-    report_lines.append("")
-
-    # Social Sentiment Analysis
-    report_lines.append("### Social Sentiment Analysis")
-    report_lines.append("")
-    if final_state.get("sentiment_report"):
-        report_lines.append(_ensure_string(final_state["sentiment_report"]))
-    else:
-        report_lines.append("*No sentiment analysis available.*")
-    report_lines.append("")
-    report_lines.append("---")
     report_lines.append("")
 
     # Fundamentals Analysis
@@ -699,10 +702,43 @@ def generate_comprehensive_report(final_state, ticker, analysis_date, report_dir
     report_lines.append("---")
     report_lines.append("")
 
+    # Market Analysis
+    report_lines.append("### Market Analysis")
+    report_lines.append("")
+    if final_state.get("market_report"):
+        report_lines.append(_ensure_string(final_state["market_report"]))
+    else:
+        report_lines.append("*No market analysis available.*")
+    report_lines.append("")
+    report_lines.append("---")
+    report_lines.append("")
+
+    # Social Sentiment Analysis
+    report_lines.append("### Social Sentiment Analysis")
+    report_lines.append("")
+    if final_state.get("sentiment_report"):
+        report_lines.append(_ensure_string(final_state["sentiment_report"]))
+    else:
+        report_lines.append("*No sentiment analysis available.*")
+    report_lines.append("")
+    report_lines.append("---")
+    report_lines.append("")
+
+    # News Analysis
+    report_lines.append("### News Analysis")
+    report_lines.append("")
+    if final_state.get("news_report"):
+        report_lines.append(_ensure_string(final_state["news_report"]))
+    else:
+        report_lines.append("*No news analysis available.*")
+    report_lines.append("")
+    report_lines.append("---")
+    report_lines.append("")
+
     # Research Team Decision
     report_lines.append("## Research Team Decision")
     report_lines.append("")
-    report_lines.append("> *The Research Manager synthesizes the Bull vs Bear debate to provide a recommendation.*")
+    report_lines.append("> *The Research Manager synthesizes the Bull vs Bear debate to provide an AI strategy.*")
     report_lines.append("")
     if final_state.get("investment_plan"):
         report_lines.append(_ensure_string(final_state["investment_plan"]))
@@ -725,15 +761,15 @@ def generate_comprehensive_report(final_state, ticker, analysis_date, report_dir
     report_lines.append("---")
     report_lines.append("")
 
-    # Final Investment Decision
-    report_lines.append("## Final Investment Decision")
+    # AI Investing Strategy
+    report_lines.append("## AI Investing Strategy")
     report_lines.append("")
-    report_lines.append("> *The Risk Management Team (Aggressive, Conservative, Neutral) debates and the Portfolio Manager makes the final decision.*")
+    report_lines.append("> *The Risk Management Team (Aggressive, Conservative, Neutral) debates and the Portfolio Manager provides the final strategy.*")
     report_lines.append("")
     if final_state.get("final_trade_decision"):
         report_lines.append(_ensure_string(final_state["final_trade_decision"]))
     else:
-        report_lines.append("*No final decision available.*")
+        report_lines.append("*No AI investing strategy available.*")
     report_lines.append("")
     report_lines.append("---")
     report_lines.append("")
@@ -765,39 +801,6 @@ def display_complete_report(final_state):
     # I. Analyst Team Reports
     analyst_reports = []
 
-    # Market Analyst Report
-    if final_state.get("market_report"):
-        analyst_reports.append(
-            Panel(
-                safe_markdown(final_state["market_report"]),
-                title="Market Analyst",
-                border_style="blue",
-                padding=(1, 2),
-            )
-        )
-
-    # Social Analyst Report
-    if final_state.get("sentiment_report"):
-        analyst_reports.append(
-            Panel(
-                safe_markdown(final_state["sentiment_report"]),
-                title="Social Analyst",
-                border_style="blue",
-                padding=(1, 2),
-            )
-        )
-
-    # News Analyst Report
-    if final_state.get("news_report"):
-        analyst_reports.append(
-            Panel(
-                safe_markdown(final_state["news_report"]),
-                title="News Analyst",
-                border_style="blue",
-                padding=(1, 2),
-            )
-        )
-
     # Fundamentals Analyst Report
     if final_state.get("fundamentals_report"):
         analyst_reports.append(
@@ -827,6 +830,39 @@ def display_complete_report(final_state):
                 safe_markdown(final_state["growth_report"]),
                 title="Growth Analyst (Lynch/Druckenmiller/Fisher)",
                 border_style="green",
+                padding=(1, 2),
+            )
+        )
+
+    # Market Analyst Report
+    if final_state.get("market_report"):
+        analyst_reports.append(
+            Panel(
+                safe_markdown(final_state["market_report"]),
+                title="Market Analyst",
+                border_style="blue",
+                padding=(1, 2),
+            )
+        )
+
+    # Social Analyst Report
+    if final_state.get("sentiment_report"):
+        analyst_reports.append(
+            Panel(
+                safe_markdown(final_state["sentiment_report"]),
+                title="Social Analyst",
+                border_style="blue",
+                padding=(1, 2),
+            )
+        )
+
+    # News Analyst Report
+    if final_state.get("news_report"):
+        analyst_reports.append(
+            Panel(
+                safe_markdown(final_state["news_report"]),
+                title="News Analyst",
+                border_style="blue",
                 padding=(1, 2),
             )
         )
@@ -947,13 +983,13 @@ def display_complete_report(final_state):
             console.print(
                 Panel(
                     Columns(risk_reports, equal=True, expand=True),
-                    title="IV. Risk Management Team Decision",
+                    title="IV. Risk Management Team",
                     border_style="red",
                     padding=(1, 2),
                 )
             )
 
-        # V. Portfolio Manager Decision
+        # V. AI Investing Strategy
         if risk_state.get("judge_decision"):
             console.print(
                 Panel(
@@ -963,7 +999,7 @@ def display_complete_report(final_state):
                         border_style="blue",
                         padding=(1, 2),
                     ),
-                    title="V. Portfolio Manager Decision",
+                    title="V. AI Investing Strategy",
                     border_style="green",
                     padding=(1, 2),
                 )
@@ -1069,13 +1105,18 @@ def run_analysis():
 
     def save_report_section_decorator(obj, func_name):
         func = getattr(obj, func_name)
+        # Map section names to file names (rename final_trade_decision to AI_investing_strategy)
+        file_name_mapping = {
+            "final_trade_decision": "AI_investing_strategy",
+        }
         @wraps(func)
         def wrapper(section_name, content):
             func(section_name, content)
             if section_name in obj.report_sections and obj.report_sections[section_name] is not None:
                 content = obj.report_sections[section_name]
                 if content:
-                    file_name = f"{section_name}.md"
+                    base_name = file_name_mapping.get(section_name, section_name)
+                    file_name = f"{base_name}.md"
                     with open(report_dir / file_name, "w") as f:
                         # Use _ensure_string to extract proper text from Gemini's list format
                         content_str = _ensure_string(content)
@@ -1161,7 +1202,54 @@ def run_analysis():
                             message_buffer.add_tool_call(tool_call.name, tool_call.args)
 
                 # Update reports and agent status based on chunk content
-                # Analyst Team Reports
+                # Analyst Team Reports (order: fundamentals → value → growth → market → social → news)
+                if "fundamentals_report" in chunk and chunk["fundamentals_report"]:
+                    message_buffer.update_report_section(
+                        "fundamentals_report", chunk["fundamentals_report"]
+                    )
+                    message_buffer.update_agent_status(
+                        "Fundamentals Analyst", "completed"
+                    )
+                    # Set next analyst to in_progress
+                    if "value" in selections["analysts"]:
+                        message_buffer.update_agent_status(
+                            "Value Analyst", "in_progress"
+                        )
+                    elif "growth" in selections["analysts"]:
+                        message_buffer.update_agent_status(
+                            "Growth Analyst", "in_progress"
+                        )
+                    elif "market" in selections["analysts"]:
+                        message_buffer.update_agent_status(
+                            "Market Analyst", "in_progress"
+                        )
+
+                if "value_report" in chunk and chunk["value_report"]:
+                    message_buffer.update_report_section(
+                        "value_report", chunk["value_report"]
+                    )
+                    message_buffer.update_agent_status("Value Analyst", "completed")
+                    # Set next analyst to in_progress
+                    if "growth" in selections["analysts"]:
+                        message_buffer.update_agent_status(
+                            "Growth Analyst", "in_progress"
+                        )
+                    elif "market" in selections["analysts"]:
+                        message_buffer.update_agent_status(
+                            "Market Analyst", "in_progress"
+                        )
+
+                if "growth_report" in chunk and chunk["growth_report"]:
+                    message_buffer.update_report_section(
+                        "growth_report", chunk["growth_report"]
+                    )
+                    message_buffer.update_agent_status("Growth Analyst", "completed")
+                    # Set next analyst to in_progress
+                    if "market" in selections["analysts"]:
+                        message_buffer.update_agent_status(
+                            "Market Analyst", "in_progress"
+                        )
+
                 if "market_report" in chunk and chunk["market_report"]:
                     message_buffer.update_report_section(
                         "market_report", chunk["market_report"]
@@ -1183,57 +1271,15 @@ def run_analysis():
                         message_buffer.update_agent_status(
                             "News Analyst", "in_progress"
                         )
+                    else:
+                        # No more analysts, move to research team
+                        update_research_team_status("in_progress")
 
                 if "news_report" in chunk and chunk["news_report"]:
                     message_buffer.update_report_section(
                         "news_report", chunk["news_report"]
                     )
                     message_buffer.update_agent_status("News Analyst", "completed")
-                    # Set next analyst to in_progress
-                    if "fundamentals" in selections["analysts"]:
-                        message_buffer.update_agent_status(
-                            "Fundamentals Analyst", "in_progress"
-                        )
-
-                if "fundamentals_report" in chunk and chunk["fundamentals_report"]:
-                    message_buffer.update_report_section(
-                        "fundamentals_report", chunk["fundamentals_report"]
-                    )
-                    message_buffer.update_agent_status(
-                        "Fundamentals Analyst", "completed"
-                    )
-                    # Set next analyst to in_progress
-                    if "value" in selections["analysts"]:
-                        message_buffer.update_agent_status(
-                            "Value Analyst", "in_progress"
-                        )
-                    elif "growth" in selections["analysts"]:
-                        message_buffer.update_agent_status(
-                            "Growth Analyst", "in_progress"
-                        )
-                    else:
-                        # No more analysts, move to research team
-                        update_research_team_status("in_progress")
-
-                if "value_report" in chunk and chunk["value_report"]:
-                    message_buffer.update_report_section(
-                        "value_report", chunk["value_report"]
-                    )
-                    message_buffer.update_agent_status("Value Analyst", "completed")
-                    # Set next analyst to in_progress
-                    if "growth" in selections["analysts"]:
-                        message_buffer.update_agent_status(
-                            "Growth Analyst", "in_progress"
-                        )
-                    else:
-                        # No more analysts, move to research team
-                        update_research_team_status("in_progress")
-
-                if "growth_report" in chunk and chunk["growth_report"]:
-                    message_buffer.update_report_section(
-                        "growth_report", chunk["growth_report"]
-                    )
-                    message_buffer.update_agent_status("Growth Analyst", "completed")
                     # All analysts done, move to research team
                     update_research_team_status("in_progress")
 
@@ -1366,7 +1412,7 @@ def run_analysis():
                             f"### Neutral Analyst Analysis\n{risk_state['current_neutral_response']}",
                         )
 
-                    # Update Portfolio Manager status and final decision
+                    # Update Portfolio Manager status and final strategy
                     if "judge_decision" in risk_state and risk_state["judge_decision"]:
                         message_buffer.update_agent_status(
                             "Portfolio Manager", "in_progress"
@@ -1375,10 +1421,10 @@ def run_analysis():
                             "Reasoning",
                             f"Portfolio Manager: {risk_state['judge_decision']}",
                         )
-                        # Update risk report with final decision only
+                        # Update risk report with final strategy only
                         message_buffer.update_report_section(
                             "final_trade_decision",
-                            f"### Portfolio Manager Decision\n{risk_state['judge_decision']}",
+                            f"### Portfolio Manager Strategy\n{risk_state['judge_decision']}",
                         )
                         # Mark risk analysts as completed
                         message_buffer.update_agent_status("Risky Analyst", "completed")
@@ -1395,9 +1441,8 @@ def run_analysis():
 
             trace.append(chunk)
 
-        # Get final state and decision
+        # Get final state
         final_state = trace[-1]
-        decision = graph.process_signal(final_state["final_trade_decision"])
 
         # Update all agent statuses to completed
         for agent in message_buffer.agent_status:

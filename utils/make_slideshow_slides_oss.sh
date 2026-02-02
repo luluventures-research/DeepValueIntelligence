@@ -133,17 +133,79 @@ if [[ -d "$SLIDES_DIR" ]]; then
 fi
 rm -f "$POD" "$SRT_FILE" "$OUT_MP4"
 
-# ── 1. Speed-up audio -------------------------------------------------------
+# ── 1. Enhanced Anti-Watermark & Anti-Detection Pipeline ------------------
 ORIGINAL_DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$AUDIO_INPUT")
 echo "🎵 Original audio duration: ${ORIGINAL_DURATION}s"
-echo "⚡ Applying speed multiplier: ${SPEED}x"
+echo "🛡️  Applying enhanced anti-watermark & anti-detection pipeline..."
 
-ffmpeg -y -i "$AUDIO_INPUT" -filter:a atempo="$SPEED" \
-       -ac 2 -ar 44100 -sample_fmt s16 "$POD"
+# Multi-stage audio processing to defeat:
+# 1. SynthID watermarking (pitch shifting + spectral disruption)
+# 2. Pattern detection (randomized parameters per video)
+# 3. Audio fingerprinting (unique spectral signature per render)
+# 4. Metadata tracking (complete sanitization)
+
+# Generate random variations to prevent pattern detection
+# Use milliseconds from epoch for consistent randomness per video
+SEED=$(date +%s%3N | tail -c 4)
+RANDOM_PITCH_VAR=$(awk "BEGIN {print 1.029302 + ($SEED % 100) / 50000}")  # ±0.001 variation
+RANDOM_NOISE=$(awk "BEGIN {print 0.001 + ($SEED % 50) / 100000}")         # Slight noise variation
+RANDOM_EQ_FREQ=$(awk "BEGIN {print 8000 + ($SEED % 200) - 100}")          # EQ frequency variation
+
+TEMP_STAGE1="$OUTPUT_DIR/${BASE}_temp_stage1.wav"
+TEMP_STAGE2="$OUTPUT_DIR/${BASE}_temp_stage2.wav"
+TEMP_STAGE3="$OUTPUT_DIR/${BASE}_temp_stage3.wav"
+TEMP_STAGE4="$OUTPUT_DIR/${BASE}_temp_stage4.wav"
+
+# Stage 1: Speed adjustment only (pitch shift comes later in round-trip)
+echo "⚡ Stage 1: Speed adjustment (${SPEED}x)..."
+ffmpeg -y -loglevel error -i "$AUDIO_INPUT" \
+       -filter:a "atempo=${SPEED}" \
+       -ac 2 -ar 44100 -sample_fmt s16 \
+       -map_metadata -1 \
+       "$TEMP_STAGE1"
+
+# Stage 2: Pitch shift UP + spectral filtering + randomized noise injection
+echo "🔊 Stage 2: Pitch shift + spectral filtering + randomized noise..."
+ffmpeg -y -loglevel error -i "$TEMP_STAGE1" \
+       -filter_complex "[0:a]asetrate=44100*${RANDOM_PITCH_VAR},aresample=44100,highpass=f=100,lowpass=f=15000,equalizer=f=${RANDOM_EQ_FREQ}:width_type=h:width=200:g=-1,volume=1.0[main];anoisesrc=d=1:c=pink:r=44100:a=${RANDOM_NOISE}[noise];[main][noise]amix=inputs=2:duration=first:weights=1 0.002[out]" \
+       -map "[out]" -ac 2 -ar 44100 -sample_fmt s16 \
+       -map_metadata -1 \
+       "$TEMP_STAGE2"
+
+# Stage 3: Compensatory pitch shift DOWN (return to original pitch)
+echo "🎚️  Stage 3: Compensatory pitch shift..."
+COMP_PITCH=$(awk "BEGIN {print 1 / $RANDOM_PITCH_VAR}")
+ffmpeg -y -loglevel error -i "$TEMP_STAGE2" \
+       -filter:a "asetrate=44100*${COMP_PITCH},aresample=44100" \
+       -ac 2 -ar 44100 -sample_fmt s16 \
+       -map_metadata -1 \
+       "$TEMP_STAGE3"
+
+# Stage 4: Re-encode + normalization
+echo "📼 Stage 4: Re-encoding + normalization..."
+ffmpeg -y -loglevel error -i "$TEMP_STAGE3" \
+       -filter:a "loudnorm=I=-16:TP=-1.5:LRA=11" \
+       -ac 2 -ar 44100 -sample_fmt s16 \
+       -map_metadata -1 \
+       "$TEMP_STAGE4"
+
+# Stage 5: Final metadata sanitization & codec change
+echo "🧹 Stage 5: Complete metadata sanitization..."
+ffmpeg -y -loglevel error -i "$TEMP_STAGE4" \
+       -c:a pcm_s16le \
+       -ar 44100 -ac 2 \
+       -map_metadata -1 \
+       -fflags +bitexact \
+       -flags:a +bitexact \
+       "$POD"
+
+# Cleanup temporary files
+rm -f "$TEMP_STAGE1" "$TEMP_STAGE2" "$TEMP_STAGE3" "$TEMP_STAGE4"
 
 # Get audio duration
 AUDIO_DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$POD")
-echo "✅ Sped-up audio duration: ${AUDIO_DURATION}s"
+echo "✅ Anti-watermark processing complete: ${AUDIO_DURATION}s"
+echo "🛡️  Applied: pitch shifting, spectral filtering, noise injection, re-encoding"
 
 # Fresh slides dir
 mkdir -p "$SLIDES_DIR"
@@ -201,8 +263,8 @@ for page_num in range(page_count):
     watermark_box = [width - crop_right, height - crop_bottom, width, height]
     draw.rectangle(watermark_box, fill='white')
 
-    # Add custom watermark "luluvc.com"
-    watermark_text = "luluvc.com"
+    # Add custom watermark "deepvalues.ai"
+    watermark_text = "deepvalues.ai"
 
     # Try to use a nice font, fall back to default if not available
     try:
@@ -248,7 +310,7 @@ for page_num in range(page_count):
     temp_path.unlink()
 
 pdf_doc.close()
-print(f"✅ Extracted {page_count} pages, removed NotebookLM watermarks, and added luluvc.com branding")
+print(f"✅ Extracted {page_count} pages, removed NotebookLM watermarks, and added deepvalues.ai branding")
 PDFPY
 
   # Count number of slides
@@ -318,32 +380,52 @@ if SLIDES_PDF:
 
     num_slides = len(pdf_slides)
 
-    # Calculate duration for each slide
-    # Each slide gets CHUNK seconds, except the last one which gets the remaining time
-    slide_durations = []
-    for i in range(num_slides - 1):
-        slide_durations.append(CHUNK)
+    # Calculate duration for each slide with randomized timing to prevent pattern detection
+    # Each slide gets CHUNK seconds ± small random variation (0-3%)
+    # This defeats algorithmic pattern matching while maintaining natural pacing
+    import random
+    random.seed(int(AUDIO_DURATION * 1000))  # Consistent per video, different across videos
 
-    # Last slide gets remaining time
-    time_used = CHUNK * (num_slides - 1)
-    last_slide_duration = max(CHUNK, AUDIO_DURATION - time_used)
+    slide_durations = []
+    total_variation = 0.0
+
+    for i in range(num_slides - 1):
+        # Add random variation between -3% and +3%
+        variation = random.uniform(-0.03, 0.03)
+        varied_duration = CHUNK * (1 + variation)
+        slide_durations.append(varied_duration)
+        total_variation += (varied_duration - CHUNK)
+
+    # Last slide compensates for all variations to match total audio duration
+    time_used = sum(slide_durations)
+    last_slide_duration = max(CHUNK * 0.5, AUDIO_DURATION - time_used)
     slide_durations.append(last_slide_duration)
 
     print(f"📊 Total slides: {num_slides}")
     print(f"⏱️  Audio duration: {AUDIO_DURATION:.2f}s")
-    print(f"⏱️  Duration per slide: {CHUNK}s")
+    print(f"⏱️  Duration per slide: {CHUNK}s (±3% variation for anti-detection)")
     print(f"⏱️  Last slide duration: {last_slide_duration:.2f}s")
 
-    # Frame counter
+    # Frame counter with cumulative timing to prevent frame loss
     frame = 0
+    cumulative_time = 0.0
 
     def save_frames(img, duration_sec):
-        """Save frames for specified duration at TARGET_FPS"""
-        global frame
-        frames_needed = max(1, int(duration_sec * TARGET_FPS))
-        for _ in range(frames_needed):
+        """Save frames for specified duration at TARGET_FPS with cumulative tracking"""
+        global frame, cumulative_time
+
+        # Calculate target time after this slide
+        target_time = cumulative_time + duration_sec
+        target_frame = round(target_time * TARGET_FPS)
+        current_frame = frame
+
+        # Generate frames to reach target
+        frames_to_generate = max(1, target_frame - current_frame)
+        for _ in range(frames_to_generate):
             img.save(SLIDES/f"frame_{frame:06d}.png")
             frame += 1
+
+        cumulative_time = target_time
 
     # Process each PDF slide
     for i, pdf_slide_path in enumerate(tqdm.tqdm(pdf_slides, desc="Processing PDF slides")):
@@ -543,13 +625,48 @@ for idx in tqdm.tqdm(sorted(blocks)):
 (SLIDES/"frames_count.txt").write_text(str(frame))
 PY
 
-# ── 4. Assemble video with fixed FPS ---------------------------------------
+# ── 4. Assemble video with enhanced anti-detection measures ---------------
 FRAMES=$(<"$SLIDES_DIR/frames_count.txt")
 
-# Use fixed FPS - frames are already generated for correct timing
-ffmpeg -y -framerate "$TARGET_FPS" -pattern_type glob -i "$SLIDES_DIR/frame_*.png" \
-       -i "$POD" -c:v libx264 -r 30 -pix_fmt yuv420p -preset veryfast -crf 18 \
-       -c:a aac -b:a 192k -shortest "$OUT_MP4"
+TEMP_VIDEO="$OUTPUT_DIR/${BASE}_temp_video.mp4"
 
-echo "✅  $OUT_MP4 created — timing fixed for images; frames properly synchronized with audio"
+# First pass: Create video with clean encoding
+echo "🎬 Stage 1: Creating video with optimized encoding..."
+ffmpeg -y -loglevel error -framerate "$TARGET_FPS" -pattern_type glob -i "$SLIDES_DIR/frame_*.png" \
+       -i "$POD" \
+       -c:v libx264 -r 30 -pix_fmt yuv420p -preset medium -crf 18 \
+       -c:a aac -b:a 192k -ar 44100 \
+       -shortest \
+       -map_metadata -1 \
+       -fflags +bitexact \
+       "$TEMP_VIDEO"
+
+# Second pass: Complete metadata sanitization + C2PA stripping
+echo "🔒 Stage 2: Sanitizing metadata & removing tracking signatures..."
+ffmpeg -y -loglevel error -i "$TEMP_VIDEO" \
+       -c:v copy -c:a copy \
+       -map_metadata -1 \
+       -map_chapters -1 \
+       -fflags +bitexact \
+       -movflags +faststart \
+       -metadata title="" \
+       -metadata artist="" \
+       -metadata album="" \
+       -metadata date="" \
+       -metadata comment="Human-curated educational content" \
+       -metadata description="" \
+       -metadata synopsis="" \
+       -metadata encoder="" \
+       -metadata creation_time="" \
+       "$OUT_MP4"
+
+# Remove temporary video
+rm -f "$TEMP_VIDEO"
+
+echo "✅  $OUT_MP4 created — timing synchronized, metadata sanitized, anti-detection applied"
+
+# ── 5. Cleanup temporary frames --------------------------------------------
+echo "🧹 Cleaning up temporary frames..."
+rm -rf "$SLIDES_DIR"
+echo "✅  Cleanup complete"
 ###############################################################################
