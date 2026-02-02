@@ -7,6 +7,14 @@ import json
 from datetime import date
 from typing import Dict, Any, Tuple, List, Optional
 
+# Patch httpx default timeout before any LLM imports
+# This works around a bug in langchain-google where timeout isn't properly passed
+# See: https://github.com/langchain-ai/langchain-google/issues/731
+import httpx
+from tradingagents.default_config import DEFAULT_CONFIG
+_llm_timeout = DEFAULT_CONFIG.get("llm_timeout", 1800)
+httpx._config.DEFAULT_TIMEOUT_CONFIG = httpx.Timeout(timeout=float(_llm_timeout))
+
 from langchain_openai import ChatOpenAI
 
 logger = logging.getLogger(__name__)
@@ -16,7 +24,6 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.prebuilt import ToolNode
 
 from tradingagents.agents import *
-from tradingagents.default_config import DEFAULT_CONFIG
 from tradingagents.agents.utils.memory import FinancialSituationMemory
 from tradingagents.agents.utils.agent_states import (
     AgentState,
@@ -37,7 +44,7 @@ class TradingAgentsGraph:
 
     def __init__(
         self,
-        selected_analysts=["market", "social", "news", "fundamentals", "value", "growth"],
+        selected_analysts=["fundamentals", "value", "growth", "market", "social", "news"],
         debug=False,
         config: Dict[str, Any] = None,
     ):
@@ -114,7 +121,6 @@ class TradingAgentsGraph:
             # Google Gemini models
             # Note: ChatGoogleGenerativeAI has a known bug where timeout isn't always respected
             # See: https://github.com/langchain-ai/langchain-google/issues/731
-            # We set timeout and max_retries, but timeout may not work reliably
             if not self.config.get("google_api_key"):
                 raise ValueError("GOOGLE_API_KEY environment variable is required for Gemini models")
 
@@ -122,8 +128,8 @@ class TradingAgentsGraph:
                 model=model_name,
                 google_api_key=self.config["google_api_key"],
                 timeout=llm_timeout,
-                max_retries=2,  # Reduce retries to avoid compounding timeouts
-                transport="rest",  # Use REST transport
+                max_retries=3,
+                transport="rest",
             )
         elif model_name.startswith("claude") or self.config["llm_provider"].lower() == "anthropic":
             # Anthropic Claude models

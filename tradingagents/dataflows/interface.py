@@ -99,7 +99,47 @@ def get_enhanced_fundamentals(ticker: str, curr_date: str) -> str:
     Tries SimFin data first, then falls back to Google/OpenAI APIs.
     """
     results = []
-    
+
+    # Fetch current market data from Yahoo Finance first
+    try:
+        stock = yf.Ticker(ticker)
+        info = stock.info
+
+        # Get current price and key market metrics
+        current_price = info.get('currentPrice') or info.get('regularMarketPrice') or info.get('previousClose')
+        market_cap = info.get('marketCap')
+        pe_ratio = info.get('trailingPE')
+        forward_pe = info.get('forwardPE')
+        pb_ratio = info.get('priceToBook')
+        ps_ratio = info.get('priceToSalesTrailing12Months')
+        dividend_yield = info.get('dividendYield')
+        fifty_two_week_high = info.get('fiftyTwoWeekHigh')
+        fifty_two_week_low = info.get('fiftyTwoWeekLow')
+
+        market_data_lines = ["## Current Market Data (Real-Time from Yahoo Finance):"]
+        if current_price:
+            market_data_lines.append(f"- **Current Stock Price: ${current_price:.2f}**")
+        if market_cap:
+            market_cap_formatted = f"${market_cap/1e9:.2f}B" if market_cap >= 1e9 else f"${market_cap/1e6:.2f}M"
+            market_data_lines.append(f"- Market Cap: {market_cap_formatted}")
+        if pe_ratio:
+            market_data_lines.append(f"- P/E Ratio (TTM): {pe_ratio:.2f}")
+        if forward_pe:
+            market_data_lines.append(f"- Forward P/E: {forward_pe:.2f}")
+        if pb_ratio:
+            market_data_lines.append(f"- P/B Ratio: {pb_ratio:.2f}")
+        if ps_ratio:
+            market_data_lines.append(f"- P/S Ratio: {ps_ratio:.2f}")
+        if dividend_yield:
+            market_data_lines.append(f"- Dividend Yield: {dividend_yield*100:.2f}%")
+        if fifty_two_week_high and fifty_two_week_low:
+            market_data_lines.append(f"- 52-Week Range: ${fifty_two_week_low:.2f} - ${fifty_two_week_high:.2f}")
+
+        if len(market_data_lines) > 1:
+            results.append("\n".join(market_data_lines))
+    except Exception as e:
+        results.append(f"## Current Market Data: Unable to fetch from Yahoo Finance ({str(e)})")
+
     # Try SimFin data sources with ticker variations
     simfin_sources = [
         ("Balance Sheet", lambda t: get_simfin_balance_sheet(t, "annual", curr_date)),
@@ -578,6 +618,20 @@ def get_stock_stats_indicators_window(
     look_back_days: Annotated[int, "how many days to look back"],
     online: Annotated[bool, "to fetch data online or offline"],
 ) -> str:
+
+    # Handle multiple comma-separated indicators
+    if ',' in indicator:
+        indicators = [ind.strip() for ind in indicator.split(',')]
+        results = []
+        for ind in indicators:
+            try:
+                result = get_stock_stats_indicators_window(
+                    symbol, ind, curr_date, look_back_days, online
+                )
+                results.append(result)
+            except ValueError as e:
+                results.append(f"Error for {ind}: {str(e)}")
+        return "\n\n".join(results)
 
     best_ind_params = {
         # Moving Averages

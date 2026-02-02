@@ -44,7 +44,8 @@ DEFAULT_CONFIG = {
     "max_risk_discuss_rounds": 1,
     "max_recur_limit": 200,
     # Timeout settings (in seconds)
-    "llm_timeout": 900,
+    # Increased for long-running LLM operations like research debates
+    "llm_timeout": 1800,
     # Tool settings
     "online_tools": True,
 }

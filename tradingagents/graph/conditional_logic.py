@@ -11,8 +11,8 @@ class ConditionalLogic:
     """Handles conditional logic for determining graph flow."""
 
     # Absolute safety limits to prevent infinite loops
-    ABSOLUTE_MAX_DEBATE_COUNT = 20
-    ABSOLUTE_MAX_RISK_COUNT = 30
+    ABSOLUTE_MAX_DEBATE_COUNT = 10
+    ABSOLUTE_MAX_RISK_COUNT = 15
 
     def __init__(self, max_debate_rounds=1, max_risk_discuss_rounds=1):
         """Initialize with configuration parameters."""
