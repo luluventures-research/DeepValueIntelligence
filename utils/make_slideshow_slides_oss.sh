@@ -151,10 +151,36 @@ RANDOM_PITCH_VAR=$(awk "BEGIN {print 1.029302 + ($SEED % 100) / 50000}")  # ±0.
 RANDOM_NOISE=$(awk "BEGIN {print 0.001 + ($SEED % 50) / 100000}")         # Slight noise variation
 RANDOM_EQ_FREQ=$(awk "BEGIN {print 8000 + ($SEED % 200) - 100}")          # EQ frequency variation
 
+# Phase 1 Advanced: Spectral Peak Disruption (targets neural fingerprinting)
+PEAK1=$(awk "BEGIN {print 500 + ($SEED % 100) - 50}")    # Low-mid frequency
+PEAK2=$(awk "BEGIN {print 1000 + ($SEED % 100) - 50}")   # Mid frequency
+PEAK3=$(awk "BEGIN {print 2000 + ($SEED % 100) - 50}")   # Upper-mid
+PEAK4=$(awk "BEGIN {print 4000 + ($SEED % 100) - 50}")   # High-mid
+PEAK5=$(awk "BEGIN {print 8000 + ($SEED % 100) - 50}")   # High frequency
+
+# Phase 1 Advanced: Sample Rate Jitter (±0.05% variation)
+SR_JITTER=$(awk "BEGIN {print 44100 + ($SEED % 40) - 20}")  # 44080-44120 Hz
+
+# Phase 1 Advanced: Micro-Timing Jitter (imperceptible time-stretch)
+TIME_JITTER=$(awk "BEGIN {print 1.0 + ($SEED % 10) / 10000}")  # 1.0000-1.0010 (0.01-0.1% stretch)
+
+# Phase 2 Advanced: Formant shift (±2-5% vocal tract resonance shift)
+FORMANT_SHIFT=$(awk "BEGIN {print 1.0 + ($SEED % 50 - 25) / 1000}")  # 0.975-1.025
+
+# Phase 2 Advanced: Adversarial noise parameters
+ADV_NOISE_AMP=$(awk "BEGIN {print 0.0015 + ($SEED % 30) / 100000}")  # Higher amplitude
+ADV_NOISE_FREQ=$(awk "BEGIN {print 3000 + ($SEED % 400) - 200}")     # Variable center frequency
+
+# Phase 2 Advanced: Speech rate micro-variation (±1-3% per segment)
+SPEECH_VAR=$(awk "BEGIN {print 1.0 + ($SEED % 30 - 15) / 1000}")  # 0.985-1.015
+
 TEMP_STAGE1="$OUTPUT_DIR/${BASE}_temp_stage1.wav"
 TEMP_STAGE2="$OUTPUT_DIR/${BASE}_temp_stage2.wav"
 TEMP_STAGE3="$OUTPUT_DIR/${BASE}_temp_stage3.wav"
 TEMP_STAGE4="$OUTPUT_DIR/${BASE}_temp_stage4.wav"
+TEMP_STAGE5="$OUTPUT_DIR/${BASE}_temp_stage5_mp3.mp3"
+TEMP_STAGE6="$OUTPUT_DIR/${BASE}_temp_stage6_opus.opus"
+TEMP_STAGE7="$OUTPUT_DIR/${BASE}_temp_stage7.wav"
 
 # Stage 1: Speed adjustment only (pitch shift comes later in round-trip)
 echo "⚡ Stage 1: Speed adjustment (${SPEED}x)..."
@@ -164,33 +190,78 @@ ffmpeg -y -loglevel error -i "$AUDIO_INPUT" \
        -map_metadata -1 \
        "$TEMP_STAGE1"
 
-# Stage 2: Pitch shift UP + spectral filtering + randomized noise injection
-echo "🔊 Stage 2: Pitch shift + spectral filtering + randomized noise..."
+# Stage 2: Enhanced spectral disruption with Phase 1 + Phase 2 improvements
+echo "🔊 Stage 2: Multi-domain audio disruption (spectral + formant + adversarial)..."
+# Phase 1: spectral peaks, sample rate jitter, micro-timing jitter
+# Phase 2: formant shift, adversarial noise, speech rate variation
 ffmpeg -y -loglevel error -i "$TEMP_STAGE1" \
-       -filter_complex "[0:a]asetrate=44100*${RANDOM_PITCH_VAR},aresample=44100,highpass=f=100,lowpass=f=15000,equalizer=f=${RANDOM_EQ_FREQ}:width_type=h:width=200:g=-1,volume=1.0[main];anoisesrc=d=1:c=pink:r=44100:a=${RANDOM_NOISE}[noise];[main][noise]amix=inputs=2:duration=first:weights=1 0.002[out]" \
+       -filter_complex "
+         [0:a]
+         asetrate=44100*${RANDOM_PITCH_VAR},
+         aresample=${SR_JITTER},
+         atempo=${TIME_JITTER},
+         atempo=${SPEECH_VAR},
+         asetrate=44100*${FORMANT_SHIFT},
+         aresample=44100,
+         highpass=f=100,
+         lowpass=f=15000,
+         equalizer=f=${PEAK1}:width_type=h:width=50:g=-1.0,
+         equalizer=f=${PEAK2}:width_type=h:width=50:g=-0.8,
+         equalizer=f=${PEAK3}:width_type=h:width=50:g=-1.2,
+         equalizer=f=${PEAK4}:width_type=h:width=50:g=-0.9,
+         equalizer=f=${PEAK5}:width_type=h:width=50:g=-1.1,
+         volume=1.0
+         [main];
+         anoisesrc=d=1:c=pink:r=44100:a=${ADV_NOISE_AMP}[noise1];
+         anoisesrc=d=1:c=white:r=44100:a=${RANDOM_NOISE}[noise2];
+         [noise1][noise2]amix=inputs=2:duration=shortest:weights=1 1[adv_noise];
+         [main][adv_noise]amix=inputs=2:duration=first:weights=1 0.003[out]
+       " \
        -map "[out]" -ac 2 -ar 44100 -sample_fmt s16 \
        -map_metadata -1 \
        "$TEMP_STAGE2"
 
-# Stage 3: Compensatory pitch shift DOWN (return to original pitch)
-echo "🎚️  Stage 3: Compensatory pitch shift..."
+# Stage 3: Compensatory transformations + bit depth dithering
+echo "🎚️  Stage 3: Compensatory pitch/formant shift + dithering..."
 COMP_PITCH=$(awk "BEGIN {print 1 / $RANDOM_PITCH_VAR}")
+COMP_FORMANT=$(awk "BEGIN {print 1 / $FORMANT_SHIFT}")
 ffmpeg -y -loglevel error -i "$TEMP_STAGE2" \
-       -filter:a "asetrate=44100*${COMP_PITCH},aresample=44100" \
-       -ac 2 -ar 44100 -sample_fmt s16 \
+       -filter:a "asetrate=44100*${COMP_FORMANT},aresample=44100,asetrate=44100*${COMP_PITCH},aresample=44100" \
+       -ac 2 -ar 44100 -sample_fmt s16 -dither_method triangular \
        -map_metadata -1 \
        "$TEMP_STAGE3"
 
-# Stage 4: Re-encode + normalization
-echo "📼 Stage 4: Re-encoding + normalization..."
+# Stage 4: Codec Carousel - MP3 compression artifacts (Phase 2)
+echo "🔄 Stage 4: Codec carousel - MP3 compression..."
 ffmpeg -y -loglevel error -i "$TEMP_STAGE3" \
+       -c:a libmp3lame -b:a 192k -ar 44100 \
+       -map_metadata -1 \
+       "$TEMP_STAGE5"
+
+# Stage 5: Codec Carousel - Opus compression artifacts (Phase 2)
+echo "🔄 Stage 5: Codec carousel - Opus compression..."
+ffmpeg -y -loglevel error -i "$TEMP_STAGE5" \
+       -c:a libopus -b:a 128k -ar 48000 \
+       -map_metadata -1 \
+       "$TEMP_STAGE6"
+
+# Stage 6: Codec Carousel - Back to WAV (Phase 2)
+echo "🔄 Stage 6: Codec carousel - Return to WAV..."
+ffmpeg -y -loglevel error -i "$TEMP_STAGE6" \
+       -ac 2 -ar 44100 -sample_fmt s16 \
+       -map_metadata -1 \
+       "$TEMP_STAGE7"
+
+# Stage 7: Loudness normalization
+echo "📼 Stage 7: Loudness normalization..."
+ffmpeg -y -loglevel error -i "$TEMP_STAGE7" \
        -filter:a "loudnorm=I=-16:TP=-1.5:LRA=11" \
        -ac 2 -ar 44100 -sample_fmt s16 \
        -map_metadata -1 \
        "$TEMP_STAGE4"
 
-# Stage 5: Final metadata sanitization & codec change
-echo "🧹 Stage 5: Complete metadata sanitization..."
+# Stage 8: Final metadata sanitization & codec change
+echo "🧹 Stage 8: Complete metadata sanitization..."
 ffmpeg -y -loglevel error -i "$TEMP_STAGE4" \
        -c:a pcm_s16le \
        -ar 44100 -ac 2 \
@@ -199,13 +270,13 @@ ffmpeg -y -loglevel error -i "$TEMP_STAGE4" \
        -flags:a +bitexact \
        "$POD"
 
-# Cleanup temporary files
-rm -f "$TEMP_STAGE1" "$TEMP_STAGE2" "$TEMP_STAGE3" "$TEMP_STAGE4"
+# Cleanup temporary files (Phase 2: 7 stages)
+rm -f "$TEMP_STAGE1" "$TEMP_STAGE2" "$TEMP_STAGE3" "$TEMP_STAGE4" "$TEMP_STAGE5" "$TEMP_STAGE6" "$TEMP_STAGE7"
 
 # Get audio duration
 AUDIO_DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$POD")
 echo "✅ Anti-watermark processing complete: ${AUDIO_DURATION}s"
-echo "🛡️  Applied: pitch shifting, spectral filtering, noise injection, re-encoding"
+echo "🛡️  Applied (v2.3 Phase 2): pitch/formant shifting, spectral peaks, adversarial noise, codec carousel"
 
 # Fresh slides dir
 mkdir -p "$SLIDES_DIR"
