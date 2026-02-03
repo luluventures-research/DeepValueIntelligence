@@ -32,7 +32,7 @@ DEFAULT_CONFIG = {
     "llm_provider": "google",
     "deep_think_llm": "gemini-3-pro-preview",
     "quick_think_llm": "gemini-3-flash-preview",
-    "backend_url": "https://api.openai.com/v1",
+    "backend_url": "https://generativelanguage.googleapis.com/v1",
     # API configuration
     "openai_api_key": os.getenv("OPENAI_API_KEY"),
     "openai_api_base": os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1"),
