@@ -50,7 +50,7 @@ DeepValueIntelligence is a multi-agent trading framework that mirrors the dynami
 Our framework decomposes complex trading tasks into specialized roles. This ensures the system achieves a robust, scalable approach to market analysis and decision-making.
 
 ### Analyst Team
-- Fundamentals Analyst: Evaluates company financials and performance metrics, identifying intrinsic values and potential red flags.
+- Fundamentals Analyst: Evaluates company financials and performance metrics through a 10-year comprehensive historical analysis, identifying intrinsic values and potential red flags. The analysis utilizes an improved prompt to ensure completeness and accuracy of all required metrics.
 - Sentiment Analyst: Analyzes social media and public sentiment using sentiment scoring algorithms to gauge short-term market mood.
 - News Analyst: Monitors global news and macroeconomic indicators, interpreting the impact of events on market conditions.
 - Technical Analyst: Utilizes technical indicators (like MACD and RSI) to detect trading patterns and forecast price movements.
@@ -140,7 +140,7 @@ An interface will appear showing results as they load, letting you track the age
 
 ### Implementation Details
 
-We built DeepValueIntelligence with LangGraph to ensure flexibility and modularity. We utilize `o1-preview` and `gpt-4o` as our deep thinking and fast thinking LLMs for our experiments. However, for testing purposes, we recommend you use `o4-mini` and `gpt-4.1-mini` to save on costs as our framework makes **lots of** API calls.
+We built DeepValueIntelligence with LangGraph to ensure flexibility and modularity. We utilize `gemini-3-pro-preview` as our deep thinking LLM and `gemini-3-flash-preview` as our fast thinking LLM for our experiments. The default LLM provider is Google, and the backend URL is `https://generativelanguage.googleapis.com/v1`. However, for testing purposes, we recommend you use more cost-effective models as our framework makes **lots of** API calls.
 
 ### Python Usage
 
