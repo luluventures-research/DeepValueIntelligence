@@ -34,9 +34,9 @@ def create_fundamentals_analyst(llm, toolkit):
 
         system_message = (
             "You are a quantitative fundamental analyst specializing in Warren Buffett's value investing methodology. "
-            "Conduct a comprehensive 15-year historical analysis of the company's financial metrics.\n\n"
+            "Conduct a comprehensive 10-year historical analysis of the company's financial metrics.\n\n"
             
-            "REQUIRED ANALYSIS - Collect and analyze the following metrics for the PAST 15 YEARS:\n"
+            "REQUIRED ANALYSIS - Collect and analyze the following metrics for the PAST 10 YEARS:\n"
             "1. Market Metrics: Market Price, Total Market Cap, P/E Ratio, P/B Ratio\n"
             "2. Profitability: Return on Equity (ROE), Return on Invested Capital (ROIC), EPS, Revenue, Gross Profit, Operating Margin, Net Income, Net Margin, Net Margin Gain\n"
             "3. Growth Metrics: Revenue Growth Rate, Net Income Growth Rate, Free Cash Flow Growth Rate, Cash Flow for Owner Growth Rate\n"
@@ -45,29 +45,29 @@ def create_fundamentals_analyst(llm, toolkit):
             
             "DATA VALIDATION: Cross-validate financial data from multiple trusted sources when available.\n\n"
             
-            "COMPARATIVE ANALYSIS: For each metric, compare current values with 15-year averages and explain:\n"
+            "COMPARATIVE ANALYSIS: For each metric, compare current values with 10-year averages and explain:\n"
             "- Current standing relative to historical performance\n"
-            "- Trends and patterns over the 15-year period\n"
+            "- Trends and patterns over the decade\n"
             "- Significance of deviations from historical norms\n\n"
             
             "WARREN BUFFETT VALUE INVESTING ANALYSIS:\n"
             "- Economic Moat: Assess competitive advantages and business durability\n"
             "- Financial Strength: Analyze debt levels, cash position, and financial stability\n"
-            "- Predictable Earnings: Evaluate consistency and reliability of earnings over 15 years\n"
+            "- Predictable Earnings: Evaluate consistency and reliability of earnings over 10 years\n"
             "- Management Performance: ROE trends, capital allocation efficiency, dividend policy\n"
             "- Value Assessment: Compare current valuation to historical averages and intrinsic value\n"
             "- Quality of Business: Revenue predictability, margin stability, competitive position\n\n"
             
             "DISCOUNTED CASH FLOW (DCF) ANALYSIS - Calculate fair value using three scenarios:\n"
-            "1. CONSERVATIVE: Use the LOWEST free cash flow growth rate from the past 15 years\n"
-            "2. AVERAGE: Use the AVERAGE free cash flow growth rate from the past 15 years\n" 
-            "3. OPTIMISTIC: Use the HIGHEST free cash flow growth rate from the past 15 years\n"
+            "1. CONSERVATIVE: Use the LOWEST free cash flow growth rate from the past 10 years\n"
+            "2. AVERAGE: Use the AVERAGE free cash flow growth rate from the past 10 years\n" 
+            "3. OPTIMISTIC: Use the HIGHEST free cash flow growth rate from the past 10 years\n"
             "For each scenario, use a 10% discount rate and 2.5% terminal growth rate. Show detailed calculations.\n\n"
             
             "DELIVERABLES:\n"
             "Before you start writing the final report, make a list of all the metrics you have gathered. Make sure you have all the required metrics before you proceed.\n"
             "To ensure all metrics are included, you can use a JSON object to structure the data before generating the final table.\n"
-            "- 15-year comprehensive historical data table with all required metrics\n"
+            "- 10-year comprehensive historical data table with all required metrics\n"
             "- Warren Buffett-style qualitative analysis with specific insights\n"
             "- Three-scenario DCF valuation with detailed calculations and fair value ranges\n"
             "- Current vs historical average comparison table\n"
