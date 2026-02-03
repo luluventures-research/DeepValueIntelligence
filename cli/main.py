@@ -149,7 +149,7 @@ class MessageBuffer:
                 "growth_report": "Growth Analysis (Lynch/Druckenmiller/Fisher)",
                 "investment_plan": "Research Team Decision",
                 "trader_investment_plan": "Trading Team Plan",
-                "final_trade_decision": "AI Investing Strategy",
+                "final_trade_decision": "Deep Values Strategy",
             }
             # Ensure content is a string (handle Gemini list format)
             content_str = _ensure_string(latest_content)
@@ -211,9 +211,9 @@ class MessageBuffer:
             report_parts.append("## Trading Team Plan")
             report_parts.append(f"{_ensure_string(self.report_sections['trader_investment_plan'])}")
 
-        # AI Investing Strategy
+        # Deep Values Strategy
         if self.report_sections["final_trade_decision"]:
-            report_parts.append("## AI Investing Strategy")
+            report_parts.append("## Deep Values Strategy")
             report_parts.append(f"{_ensure_string(self.report_sections['final_trade_decision'])}")
 
         self.final_report = "\n\n".join(report_parts) if report_parts else None
@@ -642,7 +642,7 @@ def generate_comprehensive_report(final_state, ticker, analysis_date, report_dir
     report_lines.append("   - [News Analysis](#news-analysis)")
     report_lines.append("3. [Research Team Decision](#research-team-decision)")
     report_lines.append("4. [Trading Team Plan](#trading-team-plan)")
-    report_lines.append("5. [AI Investing Strategy](#ai-investing-strategy)")
+    report_lines.append("5. [Deep Values Strategy](#deep-values-strategy)")
     report_lines.append("")
     report_lines.append("---")
     report_lines.append("")
@@ -761,8 +761,8 @@ def generate_comprehensive_report(final_state, ticker, analysis_date, report_dir
     report_lines.append("---")
     report_lines.append("")
 
-    # AI Investing Strategy
-    report_lines.append("## AI Investing Strategy")
+    # Deep Values Strategy
+    report_lines.append("## Deep Values Strategy")
     report_lines.append("")
     report_lines.append("> *The Risk Management Team (Aggressive, Conservative, Neutral) debates and the Portfolio Manager provides the final strategy.*")
     report_lines.append("")
@@ -989,7 +989,7 @@ def display_complete_report(final_state):
                 )
             )
 
-        # V. AI Investing Strategy
+        # V. Deep Values Strategy
         if risk_state.get("judge_decision"):
             console.print(
                 Panel(
@@ -999,7 +999,7 @@ def display_complete_report(final_state):
                         border_style="blue",
                         padding=(1, 2),
                     ),
-                    title="V. AI Investing Strategy",
+                    title="V. Deep Values Strategy",
                     border_style="green",
                     padding=(1, 2),
                 )
