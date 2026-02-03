@@ -30,8 +30,8 @@ DEFAULT_CONFIG = {
     ),
     # LLM settings
     "llm_provider": "google",
-    "deep_think_llm": "o4-mini",
-    "quick_think_llm": "gpt-4o-mini",
+    "deep_think_llm": "gemini-1.5-flash",
+    "quick_think_llm": "gemini-1.5-flash",
     "backend_url": "https://api.openai.com/v1",
     # API configuration
     "openai_api_key": os.getenv("OPENAI_API_KEY"),
