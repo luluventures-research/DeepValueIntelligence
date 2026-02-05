@@ -46,6 +46,9 @@ DEFAULT_CONFIG = {
     # Timeout settings (in seconds)
     # Increased for long-running LLM operations like research debates
     "llm_timeout": 1800,
+    # Retry settings for transient errors (503, 429, timeouts)
+    "llm_max_retries": 5,  # Maximum number of retries
+    "llm_retry_base_delay": 2.0,  # Base delay in seconds (uses exponential backoff)
     # Tool settings
     "online_tools": True,
 }

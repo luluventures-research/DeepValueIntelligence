@@ -582,7 +582,7 @@ def get_analysis_date():
 
 def _filter_trading_recommendations(content: str) -> str:
     """
-    Filter out explicit BUY/SELL/HOLD recommendations from content for the AI Executive Summary.
+    Filter out explicit BUY/SELL/HOLD recommendations from content for the Intelligence Summary.
     Removes lines containing explicit trading decisions while preserving the analysis.
     """
     import re
@@ -632,7 +632,7 @@ def generate_comprehensive_report(final_state, ticker, analysis_date, report_dir
     # Table of Contents
     report_lines.append("## Table of Contents")
     report_lines.append("")
-    report_lines.append("1. [AI Executive Summary](#ai-executive-summary)")
+    report_lines.append("1. [Intelligence Summary](#intelligence-summary)")
     report_lines.append("2. [Analyst Team Reports](#analyst-team-reports)")
     report_lines.append("   - [Fundamentals Analysis](#fundamentals-analysis)")
     report_lines.append("   - [Value Analysis (Buffett)](#value-analysis-buffett)")
@@ -647,8 +647,8 @@ def generate_comprehensive_report(final_state, ticker, analysis_date, report_dir
     report_lines.append("---")
     report_lines.append("")
 
-    # AI Executive Summary (with BUY/SELL/HOLD recommendations filtered out)
-    report_lines.append("## AI Executive Summary")
+    # Intelligence Summary (with BUY/SELL/HOLD recommendations filtered out)
+    report_lines.append("## Intelligence Summary")
     report_lines.append("")
     if final_state.get("final_trade_decision"):
         decision_content = _ensure_string(final_state["final_trade_decision"])

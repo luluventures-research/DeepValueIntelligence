@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 from langchain_anthropic import ChatAnthropic
 from langchain_google_genai import ChatGoogleGenerativeAI
 
+
+
 from langgraph.prebuilt import ToolNode
 
 from tradingagents.agents import *
@@ -111,10 +113,15 @@ class TradingAgentsGraph:
         self.graph = self.graph_setup.setup_graph(selected_analysts)
 
     def _create_llm(self, model_name: str):
-        """Create the appropriate LLM client based on model name and configuration."""
-        # Get timeout from config (default: 900 seconds)
+        """Create the appropriate LLM client based on model name and configuration.
+
+        Note: Retry logic is handled by the built-in max_retries parameter in each LLM client.
+        This covers transient errors like 503 UNAVAILABLE and 429 rate limits.
+        """
+        # Get timeout and retry settings from config
         llm_timeout = self.config.get("llm_timeout", 900)
-        logger.info(f"Creating LLM client: model={model_name}, timeout={llm_timeout}s")
+        max_retries = self.config.get("llm_max_retries", 5)
+        logger.info(f"Creating LLM client: model={model_name}, timeout={llm_timeout}s, max_retries={max_retries}")
 
         # Determine provider based on model name
         if model_name.startswith("gemini") or model_name.startswith("google"):
@@ -128,9 +135,10 @@ class TradingAgentsGraph:
                 model=model_name,
                 google_api_key=self.config["google_api_key"],
                 timeout=llm_timeout,
-                max_retries=3,
+                max_retries=max_retries,
                 transport="rest",
             )
+
         elif model_name.startswith("claude") or self.config["llm_provider"].lower() == "anthropic":
             # Anthropic Claude models
             if not self.config.get("anthropic_api_key"):
@@ -140,7 +148,9 @@ class TradingAgentsGraph:
                 api_key=self.config["anthropic_api_key"],
                 base_url=self.config.get("backend_url", "https://api.anthropic.com"),
                 timeout=llm_timeout,
+                max_retries=max_retries,
             )
+
         else:
             # OpenAI models (including OpenAI-compatible APIs like Ollama)
             api_key = self.config.get("openai_api_key", "ollama")  # Default for Ollama
@@ -151,6 +161,7 @@ class TradingAgentsGraph:
                 api_key=api_key,
                 base_url=base_url,
                 request_timeout=llm_timeout,
+                max_retries=max_retries,
             )
 
     def _create_tool_nodes(self) -> Dict[str, ToolNode]:
