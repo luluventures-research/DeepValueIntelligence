@@ -25,6 +25,7 @@ OUTPUT_DIR="."
 SLIDES_PDF=""
 GENERATE_SLIDES="false"
 VIDEO_MODE="static"  # static or animated
+ANTI_WATERMARK="false"
 
 # Collect positional arguments
 POSITIONAL_ARGS=()
@@ -82,6 +83,19 @@ while [[ $# -gt 0 ]]; do
         shift 2
       else
         echo "Error: --video-mode requires an argument (animated/static)." >&2; exit 1
+      fi
+      ;;
+    --anti-watermark)
+      if [[ -n "$2" ]]; then
+        # Parse boolean argument (True/true/1 = true, anything else = false)
+        if [[ "$2" =~ ^(True|true|TRUE|1|yes|Yes|YES)$ ]]; then
+          ANTI_WATERMARK="true"
+        else
+          ANTI_WATERMARK="false"
+        fi
+        shift 2
+      else
+        echo "Error: --anti-watermark requires a boolean argument (True/False)." >&2; exit 1
       fi
       ;;
     *)
@@ -165,47 +179,6 @@ if [[ -d "$SLIDES_DIR" ]]; then
 fi
 rm -f "$POD" "$SRT_FILE" "$OUT_MP4"
 
-# ── 1. Enhanced Anti-Watermark & Anti-Detection Pipeline ------------------
-ORIGINAL_DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$AUDIO_INPUT")
-echo "🎵 Original audio duration: ${ORIGINAL_DURATION}s"
-echo "🛡️  Applying enhanced anti-watermark & anti-detection pipeline..."
-
-# Multi-stage audio processing to defeat:
-# 1. SynthID watermarking (pitch shifting + spectral disruption)
-# 2. Pattern detection (randomized parameters per video)
-# 3. Audio fingerprinting (unique spectral signature per render)
-# 4. Metadata tracking (complete sanitization)
-
-# Generate random variations to prevent pattern detection
-# Use milliseconds from epoch for consistent randomness per video
-SEED=$(date +%s%3N | tail -c 4)
-RANDOM_PITCH_VAR=$(awk "BEGIN {print 1.029302 + ($SEED % 100) / 50000}")  # ±0.001 variation
-RANDOM_NOISE=$(awk "BEGIN {print 0.001 + ($SEED % 50) / 100000}")         # Slight noise variation
-RANDOM_EQ_FREQ=$(awk "BEGIN {print 8000 + ($SEED % 200) - 100}")          # EQ frequency variation
-
-# Phase 1 Advanced: Spectral Peak Disruption (targets neural fingerprinting)
-PEAK1=$(awk "BEGIN {print 500 + ($SEED % 100) - 50}")    # Low-mid frequency
-PEAK2=$(awk "BEGIN {print 1000 + ($SEED % 100) - 50}")   # Mid frequency
-PEAK3=$(awk "BEGIN {print 2000 + ($SEED % 100) - 50}")   # Upper-mid
-PEAK4=$(awk "BEGIN {print 4000 + ($SEED % 100) - 50}")   # High-mid
-PEAK5=$(awk "BEGIN {print 8000 + ($SEED % 100) - 50}")   # High frequency
-
-# Phase 1 Advanced: Sample Rate Jitter (±0.05% variation)
-SR_JITTER=$(awk "BEGIN {print 44100 + ($SEED % 40) - 20}")  # 44080-44120 Hz
-
-# Phase 1 Advanced: Micro-Timing Jitter (imperceptible time-stretch)
-TIME_JITTER=$(awk "BEGIN {print 1.0 + ($SEED % 10) / 10000}")  # 1.0000-1.0010 (0.01-0.1% stretch)
-
-# Phase 2 Advanced: Formant shift (±2-5% vocal tract resonance shift)
-FORMANT_SHIFT=$(awk "BEGIN {print 1.0 + ($SEED % 50 - 25) / 1000}")  # 0.975-1.025
-
-# Phase 2 Advanced: Adversarial noise parameters
-ADV_NOISE_AMP=$(awk "BEGIN {print 0.0015 + ($SEED % 30) / 100000}")  # Higher amplitude
-ADV_NOISE_FREQ=$(awk "BEGIN {print 3000 + ($SEED % 400) - 200}")     # Variable center frequency
-
-# Phase 2 Advanced: Speech rate micro-variation (±1-3% per segment)
-SPEECH_VAR=$(awk "BEGIN {print 1.0 + ($SEED % 30 - 15) / 1000}")  # 0.985-1.015
-
 TEMP_STAGE1="$OUTPUT_DIR/${BASE}_temp_stage1.wav"
 TEMP_STAGE2="$OUTPUT_DIR/${BASE}_temp_stage2.wav"
 TEMP_STAGE3="$OUTPUT_DIR/${BASE}_temp_stage3.wav"
@@ -214,101 +187,152 @@ TEMP_STAGE5="$OUTPUT_DIR/${BASE}_temp_stage5_mp3.mp3"
 TEMP_STAGE6="$OUTPUT_DIR/${BASE}_temp_stage6_opus.opus"
 TEMP_STAGE7="$OUTPUT_DIR/${BASE}_temp_stage7.wav"
 
-# Stage 1: Speed adjustment only (pitch shift comes later in round-trip)
-echo "⚡ Stage 1: Speed adjustment (${SPEED}x)..."
-ffmpeg -y -loglevel error -i "$AUDIO_INPUT" \
-       -filter:a "atempo=${SPEED}" \
-       -ac 2 -ar 44100 -sample_fmt s16 \
-       -map_metadata -1 \
-       "$TEMP_STAGE1"
+# ── 1. Enhanced Anti-Watermark & Anti-Detection Pipeline ------------------
+ORIGINAL_DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$AUDIO_INPUT")
+echo "🎵 Original audio duration: ${ORIGINAL_DURATION}s"
 
-# Stage 2: Enhanced spectral disruption with Phase 1 + Phase 2 improvements
-echo "🔊 Stage 2: Multi-domain audio disruption (spectral + formant + adversarial)..."
-# Phase 1: spectral peaks, sample rate jitter, micro-timing jitter
-# Phase 2: formant shift, adversarial noise, speech rate variation
-ffmpeg -y -loglevel error -i "$TEMP_STAGE1" \
-       -filter_complex "
-         [0:a]
-         asetrate=44100*${RANDOM_PITCH_VAR},
-         aresample=${SR_JITTER},
-         atempo=${TIME_JITTER},
-         atempo=${SPEECH_VAR},
-         asetrate=44100*${FORMANT_SHIFT},
-         aresample=44100,
-         highpass=f=100,
-         lowpass=f=15000,
-         equalizer=f=${PEAK1}:width_type=h:width=50:g=-1.0,
-         equalizer=f=${PEAK2}:width_type=h:width=50:g=-0.8,
-         equalizer=f=${PEAK3}:width_type=h:width=50:g=-1.2,
-         equalizer=f=${PEAK4}:width_type=h:width=50:g=-0.9,
-         equalizer=f=${PEAK5}:width_type=h:width=50:g=-1.1,
-         volume=1.0
-         [main];
-         anoisesrc=d=1:c=pink:r=44100:a=${ADV_NOISE_AMP}[noise1];
-         anoisesrc=d=1:c=white:r=44100:a=${RANDOM_NOISE}[noise2];
-         [noise1][noise2]amix=inputs=2:duration=shortest:weights=1 1[adv_noise];
-         [main][adv_noise]amix=inputs=2:duration=first:weights=1 0.003[out]
-       " \
-       -map "[out]" -ac 2 -ar 44100 -sample_fmt s16 \
-       -map_metadata -1 \
-       "$TEMP_STAGE2"
+if [[ "$ANTI_WATERMARK" == "true" ]]; then
+  echo "🛡️  Applying enhanced anti-watermark & anti-detection pipeline..."
 
-# Stage 3: Compensatory transformations + bit depth dithering
-echo "🎚️  Stage 3: Compensatory pitch/formant shift + dithering..."
-COMP_PITCH=$(awk "BEGIN {print 1 / $RANDOM_PITCH_VAR}")
-COMP_FORMANT=$(awk "BEGIN {print 1 / $FORMANT_SHIFT}")
-ffmpeg -y -loglevel error -i "$TEMP_STAGE2" \
-       -filter:a "asetrate=44100*${COMP_FORMANT},aresample=44100,asetrate=44100*${COMP_PITCH},aresample=44100" \
-       -ac 2 -ar 44100 -sample_fmt s16 -dither_method triangular \
-       -map_metadata -1 \
-       "$TEMP_STAGE3"
+  # Multi-stage audio processing to defeat:
+  # 1. SynthID watermarking (pitch shifting + spectral disruption)
+  # 2. Pattern detection (randomized parameters per video)
+  # 3. Audio fingerprinting (unique spectral signature per render)
+  # 4. Metadata tracking (complete sanitization)
 
-# Stage 4: Codec Carousel - MP3 compression artifacts (Phase 2)
-echo "🔄 Stage 4: Codec carousel - MP3 compression..."
-ffmpeg -y -loglevel error -i "$TEMP_STAGE3" \
-       -c:a libmp3lame -b:a 192k -ar 44100 \
-       -map_metadata -1 \
-       "$TEMP_STAGE5"
+  # Generate random variations to prevent pattern detection
+  # Use milliseconds from epoch for consistent randomness per video
+  SEED=$(date +%s%3N | tail -c 4)
+  RANDOM_PITCH_VAR=$(awk "BEGIN {print 1.029302 + ($SEED % 100) / 50000}")  # ±0.001 variation
+  RANDOM_NOISE=$(awk "BEGIN {print 0.001 + ($SEED % 50) / 100000}")         # Slight noise variation
+  RANDOM_EQ_FREQ=$(awk "BEGIN {print 8000 + ($SEED % 200) - 100}")          # EQ frequency variation
 
-# Stage 5: Codec Carousel - Opus compression artifacts (Phase 2)
-echo "🔄 Stage 5: Codec carousel - Opus compression..."
-ffmpeg -y -loglevel error -i "$TEMP_STAGE5" \
-       -c:a libopus -b:a 128k -ar 48000 \
-       -map_metadata -1 \
-       "$TEMP_STAGE6"
+  # Phase 1 Advanced: Spectral Peak Disruption (targets neural fingerprinting)
+  PEAK1=$(awk "BEGIN {print 500 + ($SEED % 100) - 50}")    # Low-mid frequency
+  PEAK2=$(awk "BEGIN {print 1000 + ($SEED % 100) - 50}")   # Mid frequency
+  PEAK3=$(awk "BEGIN {print 2000 + ($SEED % 100) - 50}")   # Upper-mid
+  PEAK4=$(awk "BEGIN {print 4000 + ($SEED % 100) - 50}")   # High-mid
+  PEAK5=$(awk "BEGIN {print 8000 + ($SEED % 100) - 50}")   # High frequency
 
-# Stage 6: Codec Carousel - Back to WAV (Phase 2)
-echo "🔄 Stage 6: Codec carousel - Return to WAV..."
-ffmpeg -y -loglevel error -i "$TEMP_STAGE6" \
-       -ac 2 -ar 44100 -sample_fmt s16 \
-       -map_metadata -1 \
-       "$TEMP_STAGE7"
+  # Phase 1 Advanced: Sample Rate Jitter (±0.05% variation)
+  SR_JITTER=$(awk "BEGIN {print 44100 + ($SEED % 40) - 20}")  # 44080-44120 Hz
 
-# Stage 7: Loudness normalization
-echo "📼 Stage 7: Loudness normalization..."
-ffmpeg -y -loglevel error -i "$TEMP_STAGE7" \
-       -filter:a "loudnorm=I=-16:TP=-1.5:LRA=11" \
-       -ac 2 -ar 44100 -sample_fmt s16 \
-       -map_metadata -1 \
-       "$TEMP_STAGE4"
+  # Phase 1 Advanced: Micro-Timing Jitter (imperceptible time-stretch)
+  TIME_JITTER=$(awk "BEGIN {print 1.0 + ($SEED % 10) / 10000}")  # 1.0000-1.0010 (0.01-0.1% stretch)
 
-# Stage 8: Final metadata sanitization & codec change
-echo "🧹 Stage 8: Complete metadata sanitization..."
-ffmpeg -y -loglevel error -i "$TEMP_STAGE4" \
-       -c:a pcm_s16le \
-       -ar 44100 -ac 2 \
-       -map_metadata -1 \
-       -fflags +bitexact \
-       -flags:a +bitexact \
-       "$POD"
+  # Phase 2 Advanced: Formant shift (±2-5% vocal tract resonance shift)
+  FORMANT_SHIFT=$(awk "BEGIN {print 1.0 + ($SEED % 50 - 25) / 1000}")  # 0.975-1.025
+
+  # Phase 2 Advanced: Adversarial noise parameters
+  ADV_NOISE_AMP=$(awk "BEGIN {print 0.0015 + ($SEED % 30) / 100000}")  # Higher amplitude
+  ADV_NOISE_FREQ=$(awk "BEGIN {print 3000 + ($SEED % 400) - 200}")     # Variable center frequency
+
+  # Phase 2 Advanced: Speech rate micro-variation (±1-3% per segment)
+  SPEECH_VAR=$(awk "BEGIN {print 1.0 + ($SEED % 30 - 15) / 1000}")  # 0.985-1.015
+
+  # Stage 1: Speed adjustment only (pitch shift comes later in round-trip)
+  echo "⚡ Stage 1: Speed adjustment (${SPEED}x)..."
+  ffmpeg -y -loglevel error -i "$AUDIO_INPUT" \
+         -filter:a "atempo=${SPEED}" \
+         -ac 2 -ar 44100 -sample_fmt s16 \
+         -map_metadata -1 \
+         "$TEMP_STAGE1"
+
+  # Stage 2: Enhanced spectral disruption with Phase 1 + Phase 2 improvements
+  echo "🔊 Stage 2: Multi-domain audio disruption (spectral + formant + adversarial)..."
+  # Phase 1: spectral peaks, sample rate jitter, micro-timing jitter
+  # Phase 2: formant shift, adversarial noise, speech rate variation
+  ffmpeg -y -loglevel error -i "$TEMP_STAGE1" \
+         -filter_complex "
+           [0:a]
+           asetrate=44100*${RANDOM_PITCH_VAR},
+           aresample=${SR_JITTER},
+           atempo=${TIME_JITTER},
+           atempo=${SPEECH_VAR},
+           asetrate=44100*${FORMANT_SHIFT},
+           aresample=44100,
+           highpass=f=100,
+           lowpass=f=15000,
+           equalizer=f=${PEAK1}:width_type=h:width=50:g=-1.0,
+           equalizer=f=${PEAK2}:width_type=h:width=50:g=-0.8,
+           equalizer=f=${PEAK3}:width_type=h:width=50:g=-1.2,
+           equalizer=f=${PEAK4}:width_type=h:width=50:g=-0.9,
+           equalizer=f=${PEAK5}:width_type=h:width=50:g=-1.1,
+           volume=1.0
+           [main];
+           anoisesrc=d=1:c=pink:r=44100:a=${ADV_NOISE_AMP}[noise1];
+           anoisesrc=d=1:c=white:r=44100:a=${RANDOM_NOISE}[noise2];
+           [noise1][noise2]amix=inputs=2:duration=shortest:weights=1 1[adv_noise];
+           [main][adv_noise]amix=inputs=2:duration=first:weights=1 0.003[out]
+         " \
+         -map "[out]" -ac 2 -ar 44100 -sample_fmt s16 \
+         -map_metadata -1 \
+         "$TEMP_STAGE2"
+
+  # Stage 3: Compensatory transformations + bit depth dithering
+  echo "🎚️  Stage 3: Compensatory pitch/formant shift + dithering..."
+  COMP_PITCH=$(awk "BEGIN {print 1 / $RANDOM_PITCH_VAR}")
+  COMP_FORMANT=$(awk "BEGIN {print 1 / $FORMANT_SHIFT}")
+  ffmpeg -y -loglevel error -i "$TEMP_STAGE2" \
+         -filter:a "asetrate=44100*${COMP_FORMANT},aresample=44100,asetrate=44100*${COMP_PITCH},aresample=44100" \
+         -ac 2 -ar 44100 -sample_fmt s16 -dither_method triangular \
+         -map_metadata -1 \
+         "$TEMP_STAGE3"
+
+  # Stage 4: Codec Carousel - MP3 compression artifacts (Phase 2)
+  echo "🔄 Stage 4: Codec carousel - MP3 compression..."
+  ffmpeg -y -loglevel error -i "$TEMP_STAGE3" \
+         -c:a libmp3lame -b:a 192k -ar 44100 \
+         -map_metadata -1 \
+         "$TEMP_STAGE5"
+
+  # Stage 5: Codec Carousel - Opus compression artifacts (Phase 2)
+  echo "🔄 Stage 5: Codec carousel - Opus compression..."
+  ffmpeg -y -loglevel error -i "$TEMP_STAGE5" \
+         -c:a libopus -b:a 128k -ar 48000 \
+         -map_metadata -1 \
+         "$TEMP_STAGE6"
+
+  # Stage 6: Codec Carousel - Back to WAV (Phase 2)
+  echo "🔄 Stage 6: Codec carousel - Return to WAV..."
+  ffmpeg -y -loglevel error -i "$TEMP_STAGE6" \
+         -ac 2 -ar 44100 -sample_fmt s16 \
+         -map_metadata -1 \
+         "$TEMP_STAGE7"
+
+  # Stage 7: Loudness normalization
+  echo "📼 Stage 7: Loudness normalization..."
+  ffmpeg -y -loglevel error -i "$TEMP_STAGE7" \
+         -filter:a "loudnorm=I=-16:TP=-1.5:LRA=11" \
+         -ac 2 -ar 44100 -sample_fmt s16 \
+         -map_metadata -1 \
+         "$TEMP_STAGE4"
+
+  # Stage 8: Final metadata sanitization & codec change
+  echo "🧹 Stage 8: Complete metadata sanitization..."
+  ffmpeg -y -loglevel error -i "$TEMP_STAGE4" \
+         -c:a pcm_s16le \
+         -ar 44100 -ac 2 \
+         -map_metadata -1 \
+         -fflags +bitexact \
+         -flags:a +bitexact \
+         "$POD"
+else
+  echo "⏭️  Anti-watermark disabled; using original audio as-is."
+  cp "$AUDIO_INPUT" "$POD"
+fi
 
 # Cleanup temporary files (Phase 2: 7 stages)
 rm -f "$TEMP_STAGE1" "$TEMP_STAGE2" "$TEMP_STAGE3" "$TEMP_STAGE4" "$TEMP_STAGE5" "$TEMP_STAGE6" "$TEMP_STAGE7"
 
 # Get audio duration
 AUDIO_DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$POD")
-echo "✅ Anti-watermark processing complete: ${AUDIO_DURATION}s"
-echo "🛡️  Applied (v2.3 Phase 2): pitch/formant shifting, spectral peaks, adversarial noise, codec carousel"
+if [[ "$ANTI_WATERMARK" == "true" ]]; then
+  echo "✅ Anti-watermark processing complete: ${AUDIO_DURATION}s"
+  echo "🛡️  Applied (v2.3 Phase 2): pitch/formant shifting, spectral peaks, adversarial noise, codec carousel"
+else
+  echo "✅ Using original audio: ${AUDIO_DURATION}s"
+fi
 
 # Fresh slides dir
 mkdir -p "$SLIDES_DIR"
@@ -828,40 +852,51 @@ FRAMES=$(<"$SLIDES_DIR/frames_count.txt")
 
 TEMP_VIDEO="$OUTPUT_DIR/${BASE}_temp_video.mp4"
 
-# First pass: Create video with clean encoding
-echo "🎬 Stage 1: Creating video with optimized encoding..."
-ffmpeg -y -loglevel error -framerate "$TARGET_FPS" -pattern_type glob -i "$SLIDES_DIR/frame_*.png" \
-       -i "$POD" \
-       -c:v libx264 -r 30 -pix_fmt yuv420p -preset medium -crf 18 \
-       -c:a aac -b:a 192k -ar 44100 \
-       -shortest \
-       -map_metadata -1 \
-       -fflags +bitexact \
-       "$TEMP_VIDEO"
+if [[ "$ANTI_WATERMARK" == "true" ]]; then
+  # First pass: Create video with clean encoding
+  echo "🎬 Stage 1: Creating video with optimized encoding..."
+  ffmpeg -y -loglevel error -framerate "$TARGET_FPS" -pattern_type glob -i "$SLIDES_DIR/frame_*.png" \
+         -i "$POD" \
+         -c:v libx264 -r 30 -pix_fmt yuv420p -preset medium -crf 18 \
+         -c:a aac -b:a 192k -ar 44100 \
+         -shortest \
+         -map_metadata -1 \
+         -fflags +bitexact \
+         "$TEMP_VIDEO"
 
-# Second pass: Complete metadata sanitization + C2PA stripping
-echo "🔒 Stage 2: Sanitizing metadata & removing tracking signatures..."
-ffmpeg -y -loglevel error -i "$TEMP_VIDEO" \
-       -c:v copy -c:a copy \
-       -map_metadata -1 \
-       -map_chapters -1 \
-       -fflags +bitexact \
-       -movflags +faststart \
-       -metadata title="" \
-       -metadata artist="" \
-       -metadata album="" \
-       -metadata date="" \
-       -metadata comment="Human-curated educational content" \
-       -metadata description="" \
-       -metadata synopsis="" \
-       -metadata encoder="" \
-       -metadata creation_time="" \
-       "$OUT_MP4"
+  # Second pass: Complete metadata sanitization + C2PA stripping
+  echo "🔒 Stage 2: Sanitizing metadata & removing tracking signatures..."
+  ffmpeg -y -loglevel error -i "$TEMP_VIDEO" \
+         -c:v copy -c:a copy \
+         -map_metadata -1 \
+         -map_chapters -1 \
+         -fflags +bitexact \
+         -movflags +faststart \
+         -metadata title="" \
+         -metadata artist="" \
+         -metadata album="" \
+         -metadata date="" \
+         -metadata comment="Human-curated educational content" \
+         -metadata description="" \
+         -metadata synopsis="" \
+         -metadata encoder="" \
+         -metadata creation_time="" \
+         "$OUT_MP4"
 
-# Remove temporary video
-rm -f "$TEMP_VIDEO"
+  # Remove temporary video
+  rm -f "$TEMP_VIDEO"
 
-echo "✅  $OUT_MP4 created — timing synchronized, metadata sanitized, anti-detection applied"
+  echo "✅  $OUT_MP4 created — timing synchronized, metadata sanitized, anti-detection applied"
+else
+  echo "⏭️  Anti-watermark disabled; creating video without extra encoding/sanitization."
+  ffmpeg -y -loglevel error -framerate "$TARGET_FPS" -pattern_type glob -i "$SLIDES_DIR/frame_*.png" \
+         -i "$POD" \
+         -c:v libx264 -pix_fmt yuv420p \
+         -c:a aac -b:a 192k -ar 44100 \
+         -shortest \
+         "$OUT_MP4"
+  echo "✅  $OUT_MP4 created"
+fi
 
 # ── 5. Cleanup temporary frames --------------------------------------------
 echo "🧹 Cleaning up temporary frames..."

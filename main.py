@@ -1,5 +1,6 @@
 import argparse
 from datetime import date as _date
+from pathlib import Path
 
 from investingagents.graph.trading_graph import InvestingAgentsGraph
 from investingagents.default_config import DEFAULT_CONFIG
@@ -63,8 +64,37 @@ def main() -> None:
     ta = InvestingAgentsGraph(debug=args.debug, config=config)
 
     # forward propagate
-    _, decision = ta.propagate(args.ticker, args.date)
+    final_state, decision = ta.propagate(args.ticker, args.date)
+
     print(decision)
+
+    # Save the final markdown report to the standard log folder
+    sections = [
+        ("Market Report", final_state.get("market_report", "")),
+        ("Sentiment Report", final_state.get("sentiment_report", "")),
+        ("News Report", final_state.get("news_report", "")),
+        ("Fundamentals Report", final_state.get("fundamentals_report", "")),
+        ("Value Report", final_state.get("value_report", "")),
+        ("Growth Report", final_state.get("growth_report", "")),
+        ("Investment Plan", final_state.get("investment_plan", "")),
+        ("Final Trade Decision", final_state.get("final_trade_decision", "")),
+    ]
+
+    lines = [f"# {args.ticker} Report ({args.date})", ""]
+    for title, content in sections:
+        if not content:
+            continue
+        lines.append(f"## {title}")
+        lines.append("")
+        lines.append(str(content))
+        lines.append("")
+
+    report_md = "\n".join(lines).rstrip() + "\n"
+    results_dir = Path(config["results_dir"]) / args.ticker / args.date
+    report_dir = results_dir / "reports"
+    report_dir.mkdir(parents=True, exist_ok=True)
+    report_path = report_dir / f"{args.ticker}_deep_value_intelligence_{args.date}.md"
+    report_path.write_text(report_md, encoding="utf-8")
 
 
 if __name__ == "__main__":
