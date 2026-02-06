@@ -1,7 +1,7 @@
-# TradingAgents/graph/propagation.py
+# InvestingAgents/graph/propagation.py
 
 from typing import Dict, Any
-from tradingagents.agents.utils.agent_states import (
+from investingagents.agents.utils.agent_states import (
     AgentState,
     InvestDebateState,
     RiskDebateState,

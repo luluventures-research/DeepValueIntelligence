@@ -1,4 +1,4 @@
-# TradingAgents/graph/trading_graph.py
+# InvestingAgents/graph/trading_graph.py
 
 import logging
 import os
@@ -11,7 +11,7 @@ from typing import Dict, Any, Tuple, List, Optional
 # This works around a bug in langchain-google where timeout isn't properly passed
 # See: https://github.com/langchain-ai/langchain-google/issues/731
 import httpx
-from tradingagents.default_config import DEFAULT_CONFIG
+from investingagents.default_config import DEFAULT_CONFIG
 _llm_timeout = DEFAULT_CONFIG.get("llm_timeout", 1800)
 httpx._config.DEFAULT_TIMEOUT_CONFIG = httpx.Timeout(timeout=float(_llm_timeout))
 
@@ -25,14 +25,14 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 from langgraph.prebuilt import ToolNode
 
-from tradingagents.agents import *
-from tradingagents.agents.utils.memory import FinancialSituationMemory
-from tradingagents.agents.utils.agent_states import (
+from investingagents.agents import *
+from investingagents.agents.utils.memory import FinancialSituationMemory
+from investingagents.agents.utils.agent_states import (
     AgentState,
     InvestDebateState,
     RiskDebateState,
 )
-from tradingagents.dataflows.interface import set_config
+from investingagents.dataflows.interface import set_config
 
 from .conditional_logic import ConditionalLogic
 from .setup import GraphSetup
@@ -41,7 +41,7 @@ from .reflection import Reflector
 from .signal_processing import SignalProcessor
 
 
-class TradingAgentsGraph:
+class InvestingAgentsGraph:
     """Main class that orchestrates the trading agents framework."""
 
     def __init__(
@@ -136,7 +136,6 @@ class TradingAgentsGraph:
                 google_api_key=self.config["google_api_key"],
                 timeout=llm_timeout,
                 max_retries=max_retries,
-                transport="rest",
             )
 
         elif model_name.startswith("claude") or self.config["llm_provider"].lower() == "anthropic":
@@ -345,11 +344,11 @@ class TradingAgentsGraph:
         }
 
         # Save to file
-        directory = Path(f"eval_results/{self.ticker}/TradingAgentsStrategy_logs/")
+        directory = Path(f"eval_results/{self.ticker}/InvestingAgentsStrategy_logs/")
         directory.mkdir(parents=True, exist_ok=True)
 
         with open(
-            f"eval_results/{self.ticker}/TradingAgentsStrategy_logs/full_states_log_{trade_date}.json",
+            f"eval_results/{self.ticker}/InvestingAgentsStrategy_logs/full_states_log_{trade_date}.json",
             "w",
         ) as f:
             json.dump(self.log_states_dict, f, indent=4)

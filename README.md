@@ -13,14 +13,14 @@
 
 <div align="center">
   <!-- Keep these links. Translations will automatically update with the README. -->
-  <a href="https://www.readme-i18n.com/luluventures-research/TradingAgents?lang=de">Deutsch</a> | 
-  <a href="https://www.readme-i18n.com/luluventures-research/TradingAgents?lang=es">Español</a> | 
-  <a href="https://www.readme-i18n.com/luluventures-research/TradingAgents?lang=fr">français</a> | 
-  <a href="https://www.readme-i18n.com/luluventures-research/TradingAgents?lang=ja">日本語</a> | 
-  <a href="https://www.readme-i18n.com/luluventures-research/TradingAgents?lang=ko">한국어</a> | 
-  <a href="https://www.readme-i18n.com/luluventures-research/TradingAgents?lang=pt">Português</a> | 
-  <a href="https://www.readme-i18n.com/luluventures-research/TradingAgents?lang=ru">Русский</a> | 
-  <a href="https://www.readme-i18n.com/luluventures-research/TradingAgents?lang=zh">中文</a>
+  <a href="https://www.readme-i18n.com/luluventures-research/InvestingAgents?lang=de">Deutsch</a> | 
+  <a href="https://www.readme-i18n.com/luluventures-research/InvestingAgents?lang=es">Español</a> | 
+  <a href="https://www.readme-i18n.com/luluventures-research/InvestingAgents?lang=fr">français</a> | 
+  <a href="https://www.readme-i18n.com/luluventures-research/InvestingAgents?lang=ja">日本語</a> | 
+  <a href="https://www.readme-i18n.com/luluventures-research/InvestingAgents?lang=ko">한국어</a> | 
+  <a href="https://www.readme-i18n.com/luluventures-research/InvestingAgents?lang=pt">Português</a> | 
+  <a href="https://www.readme-i18n.com/luluventures-research/InvestingAgents?lang=ru">Русский</a> | 
+  <a href="https://www.readme-i18n.com/luluventures-research/InvestingAgents?lang=zh">中文</a>
 </div>
 
 ---
@@ -33,7 +33,7 @@
 
 <div align="center">
 
-🚀 [DeepValueIntelligence](#tradingagents-framework) | ⚡ [Installation & CLI](#installation-and-cli) | 🎬 [Demo](https://www.youtube.com/watch?v=90gr5lwjIho) | 📦 [Package Usage](#tradingagents-package) | 🤝 [Contributing](#contributing)
+🚀 [DeepValueIntelligence](#investingagents-framework) | ⚡ [Installation & CLI](#installation-and-cli) | 🎬 [Demo](https://www.youtube.com/watch?v=90gr5lwjIho) | 📦 [Package Usage](#investingagents-package) | 🤝 [Contributing](#contributing)
 
 </div>
 
@@ -136,6 +136,12 @@ An interface will appear showing results as they load, letting you track the age
   <img src="assets/cli/cli_transaction.png" width="100%" style="display: inline-block; margin: 0 2%;">
 </p>
 
+### Online Tools vs Offline
+
+The framework can run in two modes:
+- **Online tools enabled**: agents fetch live data (Yahoo Finance, Finnhub, Google News, Reddit, stockstats).
+- **Online tools disabled**: agents rely on cached/offline sources (e.g., SimFin data and cached reports). This is useful for deterministic backtests or running without API keys.
+
 ## DeepValueIntelligence Package
 
 ### Implementation Details
@@ -144,13 +150,13 @@ We built DeepValueIntelligence with LangGraph to ensure flexibility and modulari
 
 ### Python Usage
 
-To use DeepValueIntelligence inside your code, you can import the `tradingagents` module and initialize a `TradingAgentsGraph()` object. The `.propagate()` function will return a decision. You can run `main.py`, here's also a quick example:
+To use DeepValueIntelligence inside your code, you can import the `investingagents` module and initialize a `InvestingAgentsGraph()` object. The `.propagate()` function will return a decision. You can run `main.py`, here's also a quick example:
 
 ```python
-from tradingagents.graph.trading_graph import TradingAgentsGraph
-from tradingagents.default_config import DEFAULT_CONFIG
+from investingagents.graph.trading_graph import InvestingAgentsGraph
+from investingagents.default_config import DEFAULT_CONFIG
 
-ta = TradingAgentsGraph(debug=True, config=DEFAULT_CONFIG.copy())
+ta = InvestingAgentsGraph(debug=True, config=DEFAULT_CONFIG.copy())
 
 # forward propagate
 _, decision = ta.propagate("NVDA", "2024-05-10")
@@ -160,8 +166,8 @@ print(decision)
 You can also adjust the default configuration to set your own choice of LLMs, debate rounds, etc.
 
 ```python
-from tradingagents.graph.trading_graph import TradingAgentsGraph
-from tradingagents.default_config import DEFAULT_CONFIG
+from investingagents.graph.trading_graph import InvestingAgentsGraph
+from investingagents.default_config import DEFAULT_CONFIG
 
 # Create a custom config
 config = DEFAULT_CONFIG.copy()
@@ -171,7 +177,7 @@ config["max_debate_rounds"] = 1  # Increase debate rounds
 config["online_tools"] = True # Use online tools or cached data
 
 # Initialize with custom config
-ta = TradingAgentsGraph(debug=True, config=config)
+ta = InvestingAgentsGraph(debug=True, config=config)
 
 # forward propagate
 _, decision = ta.propagate("NVDA", "2024-05-10")
@@ -180,7 +186,7 @@ print(decision)
 
 > For `online_tools`, we recommend enabling them for experimentation, as they provide access to real-time data. The agents' offline tools rely on cached data from our **Lulu TradingDB**, a curated dataset we use for backtesting. We're currently in the process of refining this dataset, and we plan to release it soon alongside our upcoming projects. Stay tuned!
 
-You can view the full list of configurations in `tradingagents/default_config.py`.
+You can view the full list of configurations in `investingagents/default_config.py`.
 
 ## Contributing
 

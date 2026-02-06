@@ -1,5 +1,5 @@
 """
-TradingAgents – default_config.py
+InvestingAgents – default_config.py
 Configured for a local Ollama backend running Llama-3 8B.
 
 Prerequisites
@@ -51,6 +51,10 @@ DEFAULT_CONFIG = {
     "llm_retry_base_delay": 2.0,  # Base delay in seconds (uses exponential backoff)
     # Tool settings
     "online_tools": True,
+    # Embedding settings (optional)
+    # Options: "openai", "google", "ollama", "none"
+    "embedding_provider": os.getenv("TRADINGAGENTS_EMBEDDING_PROVIDER", ""),
+    "embedding_model": os.getenv("TRADINGAGENTS_EMBEDDING_MODEL", ""),
 }
 
 #ROOT_DIR = Path(__file__).resolve().parent

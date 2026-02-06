@@ -1,13 +1,13 @@
-# TradingAgents/graph/setup.py
+# InvestingAgents/graph/setup.py
 
 from typing import Dict, Any
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph, START
 from langgraph.prebuilt import ToolNode
 
-from tradingagents.agents import *
-from tradingagents.agents.utils.agent_states import AgentState
-from tradingagents.agents.utils.agent_utils import Toolkit
+from investingagents.agents import *
+from investingagents.agents.utils.agent_states import AgentState
+from investingagents.agents.utils.agent_utils import Toolkit
 
 from .conditional_logic import ConditionalLogic
 

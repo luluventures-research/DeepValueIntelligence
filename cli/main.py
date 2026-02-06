@@ -20,8 +20,8 @@ from rich import box
 from rich.align import Align
 from rich.rule import Rule
 
-from tradingagents.graph.trading_graph import TradingAgentsGraph
-from tradingagents.default_config import DEFAULT_CONFIG
+from investingagents.graph.trading_graph import InvestingAgentsGraph
+from investingagents.default_config import DEFAULT_CONFIG
 from cli.models import AnalystType
 from cli.utils import *
 
@@ -1069,7 +1069,7 @@ def run_analysis():
     config["llm_provider"] = selections["llm_provider"].lower()
 
     # Initialize the graph
-    graph = TradingAgentsGraph(
+    graph = InvestingAgentsGraph(
         [analyst.value for analyst in selections["analysts"]], config=config, debug=True
     )
 

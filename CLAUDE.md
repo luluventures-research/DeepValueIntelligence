@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-TradingAgents is a multi-agent LLM financial trading framework that mirrors real-world trading firm dynamics. Specialized LLM-powered agents (analysts, researchers, traders, risk managers) collaborate to evaluate market conditions and make trading decisions through structured debates.
+InvestingAgents is a multi-agent LLM financial trading framework that mirrors real-world trading firm dynamics. Specialized LLM-powered agents (analysts, researchers, traders, risk managers) collaborate to evaluate market conditions and make trading decisions through structured debates.
 
 ## Common Commands
 
@@ -39,31 +39,31 @@ Analyst Team → Research Team (Bull/Bear Debate) → Trader → Risk Management
 
 ### Key Components
 
-**`tradingagents/graph/trading_graph.py`** - `TradingAgentsGraph` is the central orchestrator that:
+**`investingagents/graph/trading_graph.py`** - `InvestingAgentsGraph` is the central orchestrator that:
 - Initializes LLMs based on provider config (OpenAI, Google, Anthropic)
 - Creates tool nodes for different data sources (market, social, news, fundamentals)
 - Manages the multi-agent workflow via LangGraph
 - Entry point: `propagate(ticker, date)` returns final state and trading decision
 
-**`tradingagents/agents/`** - Specialized agents organized by role:
+**`investingagents/agents/`** - Specialized agents organized by role:
 - `analysts/` - Market, News, Social Media, Fundamentals analysts
 - `researchers/` - Bull and Bear researchers for debate
 - `managers/` - Research Manager and Risk Manager
 - `risk_mgmt/` - Aggressive, Conservative, Neutral debators
 - `trader/` - Makes trading decisions based on research
 
-**`tradingagents/dataflows/interface.py`** - Data retrieval tools including:
+**`investingagents/dataflows/interface.py`** - Data retrieval tools including:
 - Yahoo Finance, SimFin (balance sheets, cash flow, income statements)
 - Finnhub (news, insider sentiment, transactions)
 - Reddit, Google News for sentiment
 - Technical indicators via stockstats
 
-**`tradingagents/default_config.py`** - Configuration for LLM providers, debate rounds, data paths
+**`investingagents/default_config.py`** - Configuration for LLM providers, debate rounds, data paths
 
 **`cli/main.py`** - Rich interactive CLI with real-time progress visualization
 
 ### Agent States
-Defined in `tradingagents/agents/utils/agent_states.py`:
+Defined in `investingagents/agents/utils/agent_states.py`:
 - `AgentState` - Main workflow state
 - `InvestDebateState` - Bull vs Bear research debate
 - `RiskDebateState` - Risk management discussion
@@ -81,14 +81,14 @@ Model selection is automatic based on model name prefix (gemini/google → Googl
 ## Python Usage
 
 ```python
-from tradingagents.graph.trading_graph import TradingAgentsGraph
-from tradingagents.default_config import DEFAULT_CONFIG
+from investingagents.graph.trading_graph import InvestingAgentsGraph
+from investingagents.default_config import DEFAULT_CONFIG
 
 config = DEFAULT_CONFIG.copy()
 config["deep_think_llm"] = "gpt-4o"
 config["quick_think_llm"] = "gpt-4o-mini"
 
-ta = TradingAgentsGraph(debug=True, config=config)
+ta = InvestingAgentsGraph(debug=True, config=config)
 final_state, decision = ta.propagate("NVDA", "2024-05-10")
 ```
 

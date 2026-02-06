@@ -1,32 +1,32 @@
 ## Project Overview
 
-This project, `TradingAgents`, is a multi-agent LLM financial trading framework. It uses a team of specialized AI agents to analyze financial markets, debate potential trading strategies, and make decisions. The framework is designed to mirror the structure of a real-world trading firm, with roles for analysts, researchers, traders, and risk managers.
+This project, `InvestingAgents`, is a multi-agent LLM financial trading framework. It uses a team of specialized AI agents to analyze financial markets, debate potential trading strategies, and make decisions. The framework is designed to mirror the structure of a real-world trading firm, with roles for analysts, researchers, traders, and risk managers.
 
 The system is built on Python and heavily utilizes the `LangGraph` library to create and manage the agentic workflows. It supports various LLM backends including OpenAI, Google Gemini, and Anthropic, with a default configuration pointing to a local Ollama setup.
 
-The core of the application is a `TradingAgentsGraph` which orchestrates the interactions between the different agents. The process flows from data gathering and analysis by a team of analysts (Market, Social, News, Fundamentals), through a debate phase by a research team (Bull vs. Bear), to a final decision-making process involving a trader and a risk management team.
+The core of the application is a `InvestingAgentsGraph` which orchestrates the interactions between the different agents. The process flows from data gathering and analysis by a team of analysts (Market, Social, News, Fundamentals), through a debate phase by a research team (Bull vs. Bear), to a final decision-making process involving a trader and a risk management team.
 
 ## Key Components
 
-*   **`TradingAgentsGraph` (`tradingagents/graph/trading_graph.py`):** The central class that defines and runs the entire multi-agent workflow using `LangGraph`.
-*   **Agents (`tradingagents/agents/`):** Individual agents with specialized roles, such as `FundamentalsAnalyst`, `MarketAnalyst`, `BullResearcher`, `Trader`, etc.
-*   **Tools (`tradingagents/dataflows/`):** A collection of tools for gathering financial data from various sources like Yahoo Finance, Reddit, Finnhub, and Google News.
+*   **`InvestingAgentsGraph` (`investingagents/graph/trading_graph.py`):** The central class that defines and runs the entire multi-agent workflow using `LangGraph`.
+*   **Agents (`investingagents/agents/`):** Individual agents with specialized roles, such as `FundamentalsAnalyst`, `MarketAnalyst`, `BullResearcher`, `Trader`, etc.
+*   **Tools (`investingagents/dataflows/`):** A collection of tools for gathering financial data from various sources like Yahoo Finance, Reddit, Finnhub, and Google News.
 *   **CLI (`cli/main.py`):** A rich, interactive command-line interface built with `Typer` and `rich` for running the analysis and visualizing the process in real-time.
-*   **Configuration (`tradingagents/default_config.py`):** A centralized configuration file for managing LLM providers, API keys, file paths, and other parameters.
+*   **Configuration (`investingagents/default_config.py`):** A centralized configuration file for managing LLM providers, API keys, file paths, and other parameters.
 
 ## Installation & Setup
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/luluventures-research/TradingAgents.git
-    cd TradingAgents
+    git clone https://github.com/luluventures-research/InvestingAgents.git
+    cd InvestingAgents
     ```
 
 2.  **Create a virtual environment:**
     The project recommends using `conda`.
     ```bash
-    conda create -n tradingagents python=3.13
-    conda activate tradingagents
+    conda create -n investingagents python=3.13
+    conda activate investingagents
     ```
 
 3.  **Install dependencies:**
@@ -75,7 +75,7 @@ python main.py
 
 ## Configuration
 
-The main configuration is located in `tradingagents/default_config.py`. You can create a `local_config.py` to override these settings without modifying the original files.
+The main configuration is located in `investingagents/default_config.py`. You can create a `local_config.py` to override these settings without modifying the original files.
 
 Key configuration options include:
 

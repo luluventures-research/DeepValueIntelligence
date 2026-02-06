@@ -1,8 +1,8 @@
-# TradingAgents/graph/conditional_logic.py
+# InvestingAgents/graph/conditional_logic.py
 
 import logging
 
-from tradingagents.agents.utils.agent_states import AgentState
+from investingagents.agents.utils.agent_states import AgentState
 
 logger = logging.getLogger(__name__)
 

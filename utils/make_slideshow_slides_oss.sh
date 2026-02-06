@@ -6,11 +6,16 @@
 # • ffmpeg & ffprobe
 # • whisper CLI
 # • Python 3 with: pillow, pysrt, requests, numpy, scikit-learn, jieba,
-#                  networkx, tqdm
+#                  networkx, tqdm, python-pptx (for auto slide generation)
 # • Ollama running a local model (default gpt-oss:latest) on http://localhost:11434
+# • For auto-generation: qwen2.5:14b model (ollama pull qwen2.5:14b)
 #
 # Usage:
 #   ./make_slideshow_slides_fixed.sh BASENAME [CHUNK] [TITLE] [IMG_DIR] [LANG] [SPEED]
+#
+#   With named arguments:
+#   ./make_slideshow_slides_fixed.sh --file audio.m4a --slides slides.pdf
+#   ./make_slideshow_slides_fixed.sh --file audio.m4a --generate-slides True
 ###############################################################################
 set -euo pipefail
 
@@ -18,6 +23,8 @@ set -euo pipefail
 AUDIO_FILE_PATH=""
 OUTPUT_DIR="."
 SLIDES_PDF=""
+GENERATE_SLIDES="false"
+VIDEO_MODE="static"  # static or animated
 
 # Collect positional arguments
 POSITIONAL_ARGS=()
@@ -50,6 +57,31 @@ while [[ $# -gt 0 ]]; do
         shift 2
       else
         echo "Error: --slides requires a PDF file argument." >&2; exit 1
+      fi
+      ;;
+    --generate-slides)
+      if [[ -n "$2" ]]; then
+        # Parse boolean argument (True/true/1 = true, anything else = false)
+        if [[ "$2" =~ ^(True|true|TRUE|1|yes|Yes|YES)$ ]]; then
+          GENERATE_SLIDES="true"
+        else
+          GENERATE_SLIDES="false"
+        fi
+        shift 2
+      else
+        echo "Error: --generate-slides requires a boolean argument (True/False)." >&2; exit 1
+      fi
+      ;;
+    --video-mode)
+      if [[ -n "$2" ]]; then
+        if [[ "$2" =~ ^(animated|static)$ ]]; then
+          VIDEO_MODE="$2"
+        else
+          echo "Error: --video-mode must be 'animated' or 'static'." >&2; exit 1
+        fi
+        shift 2
+      else
+        echo "Error: --video-mode requires an argument (animated/static)." >&2; exit 1
       fi
       ;;
     *)
@@ -282,6 +314,101 @@ echo "🛡️  Applied (v2.3 Phase 2): pitch/formant shifting, spectral peaks, a
 mkdir -p "$SLIDES_DIR"
 
 # ── 2. Handle PDF slides or transcription ----------------------------------
+
+# Check if we need to auto-generate slides
+if [[ "$GENERATE_SLIDES" == "true" && -z "$SLIDES_PDF" ]]; then
+  echo "🤖 Auto-generating slides from audio transcription..."
+
+  # Step 1: Transcribe audio to SRT (using existing whisper implementation)
+  echo "📝 Step 1/2: Transcribing audio..."
+  whisper "$POD" --model small --language "$LANG" --device cpu \
+          --fp16 False --task transcribe --output_format srt -o "$OUTPUT_DIR"
+
+  # Rename whisper's output to our standard name
+  SRT_FILE="$OUTPUT_DIR/${BASE}.srt"
+  mv "${POD%.*}.srt" "$SRT_FILE"
+  echo "✅ Transcription complete: $SRT_FILE"
+
+  # Step 2: Generate slides from SRT using Ollama + Qwen2.5
+  echo "📊 Step 2/3: Generating slides with AI..."
+
+  # Determine chunk duration (default to CHUNK value if set, or 35s)
+  SLIDE_CHUNK_DURATION=${CHUNK:-35}
+
+  # Path for generated PPTX
+  GENERATED_PPTX="$OUTPUT_DIR/${BASE}_auto_slides.pptx"
+
+  # Call the Python slide generation script
+  SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+  /opt/anaconda3/bin/python3 "$SCRIPT_DIR/auto_generate_slides.py" \
+          "$SRT_FILE" \
+          "$GENERATED_PPTX" \
+          "$LANG" \
+          "$SLIDE_CHUNK_DURATION"
+
+  # Check if PPTX was created successfully
+  if [[ ! -f "$GENERATED_PPTX" ]]; then
+    echo "❌ Failed to generate slides" >&2
+    exit 1
+  fi
+
+  echo "✅ Slides generated successfully: $GENERATED_PPTX"
+
+  # Check video mode
+  if [[ "$VIDEO_MODE" == "animated" ]]; then
+    echo "🎬 Step 3/3: Creating animated video from slides..."
+
+    # Path for generated JSON (created by auto_generate_slides.py)
+    SLIDES_JSON="${GENERATED_PPTX%.pptx}_slides.json"
+
+    if [[ ! -f "$SLIDES_JSON" ]]; then
+      echo "❌ Slides JSON not found: $SLIDES_JSON" >&2
+      exit 1
+    fi
+
+    # Generate animated video without audio
+    ANIMATED_VIDEO="$OUTPUT_DIR/${BASE}_animated_slides.mp4"
+    /opt/anaconda3/bin/python3 "$SCRIPT_DIR/generate_video_slides.py" \
+            "$SLIDES_JSON" \
+            "$ANIMATED_VIDEO" \
+            "$SLIDE_CHUNK_DURATION"
+
+    if [[ ! -f "$ANIMATED_VIDEO" ]]; then
+      echo "❌ Failed to generate animated video" >&2
+      exit 1
+    fi
+
+    echo "✅ Animated video created: $ANIMATED_VIDEO"
+
+    # Combine animated video with processed audio
+    FINAL_VIDEO="$OUTPUT_DIR/${BASE}_slides.mp4"
+    echo "🎞️  Combining video with audio..."
+
+    ffmpeg -y -loglevel error -i "$ANIMATED_VIDEO" -i "$POD" \
+           -c:v copy -c:a aac -b:a 192k -shortest \
+           -map_metadata -1 \
+           "$FINAL_VIDEO"
+
+    if [[ ! -f "$FINAL_VIDEO" ]]; then
+      echo "❌ Failed to combine video and audio" >&2
+      exit 1
+    fi
+
+    echo "✅  $FINAL_VIDEO created — animated video with anti-watermarked audio"
+    echo "🧹 Cleaning up temporary files..."
+    rm -f "$ANIMATED_VIDEO"
+    echo "✅  Cleanup complete"
+
+    # Exit successfully - no need to continue with PDF processing
+    exit 0
+  fi
+
+  # Static mode: Set SLIDES_PDF to point to the generated PPTX (will be processed as PDF below)
+  SLIDES_PDF="$GENERATED_PPTX"
+
+  echo "🎯 Now processing auto-generated slides..."
+fi
+
 if [[ -n "$SLIDES_PDF" ]]; then
   echo "🎯 Using PDF slides from: $SLIDES_PDF"
 

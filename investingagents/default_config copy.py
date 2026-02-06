@@ -1,5 +1,5 @@
 """
-TradingAgents – default_config.py
+InvestingAgents – default_config.py
 Configured for a local Ollama backend running Llama-3 8B.
 
 Prerequisites

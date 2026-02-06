@@ -1,50 +1,65 @@
 import chromadb
 from chromadb.config import Settings
 from openai import OpenAI
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 
 class FinancialSituationMemory:
     def __init__(self, name, config):
         self.config = config
+        self.embedding_provider = (config.get("embedding_provider") or "").lower()
+        self.embedding_model = config.get("embedding_model")
         
-        # Determine embedding model and API endpoint based on configuration
-        if config["backend_url"] == "http://localhost:11434/v1":
-            # Ollama local setup
-            self.embedding = "nomic-embed-text"
-            self.embedding_client = OpenAI(base_url=config["backend_url"])
-        else:
-            # Check if we're using Google models for the main LLMs
-            deep_model = config.get("deep_think_llm", "")
-            quick_model = config.get("quick_think_llm", "")
-            
-            using_gemini = (
-                deep_model.startswith(("gemini", "google")) or 
-                quick_model.startswith(("gemini", "google"))
-            )
-            
-            if using_gemini:
-                # When using Gemini models, use OpenAI API for embeddings
-                if not config.get("openai_api_key"):
-                    raise ValueError(
-                        "When using Gemini models, OPENAI_API_KEY is required for embedding functionality. "
-                        "Please set both GOOGLE_API_KEY (for Gemini) and OPENAI_API_KEY (for embeddings)."
-                    )
-                self.embedding = "text-embedding-3-small"
-                self.embedding_client = OpenAI(
-                    api_key=config.get("openai_api_key"),
-                    base_url=config.get("openai_api_base", "https://api.openai.com/v1")
-                )
+        # Determine embedding provider if not explicitly set
+        if not self.embedding_provider:
+            if config.get("backend_url") == "http://localhost:11434/v1":
+                self.embedding_provider = "ollama"
             else:
-                # Standard OpenAI setup
-                self.embedding = "text-embedding-3-small"
-                self.embedding_client = OpenAI(base_url=config["backend_url"])
+                deep_model = config.get("deep_think_llm", "")
+                quick_model = config.get("quick_think_llm", "")
+                using_gemini = (
+                    deep_model.startswith(("gemini", "google")) or
+                    quick_model.startswith(("gemini", "google"))
+                )
+                self.embedding_provider = "openai" if using_gemini else "openai"
+
+        # Initialize embedding client based on provider
+        if self.embedding_provider == "ollama":
+            self.embedding = self.embedding_model or "nomic-embed-text"
+            self.embedding_client = OpenAI(base_url=config["backend_url"])
+        elif self.embedding_provider == "google":
+            if not config.get("google_api_key"):
+                raise ValueError(
+                    "GOOGLE_API_KEY is required when embedding_provider is set to 'google'."
+                )
+            self.embedding = self.embedding_model or "text-embedding-004"
+            self.embedding_client = GoogleGenerativeAIEmbeddings(
+                model=self.embedding,
+                google_api_key=config["google_api_key"],
+            )
+        elif self.embedding_provider == "none":
+            self.embedding = None
+            self.embedding_client = None
+        else:
+            # Default OpenAI setup (or OpenAI-compatible)
+            self.embedding = self.embedding_model or "text-embedding-3-small"
+            self.embedding_client = OpenAI(
+                api_key=config.get("openai_api_key"),
+                base_url=config.get("openai_api_base", "https://api.openai.com/v1"),
+            )
         
         self.chroma_client = chromadb.Client(Settings(allow_reset=True))
         self.situation_collection = self.chroma_client.create_collection(name=name)
 
     def get_embedding(self, text):
         """Get embedding for a text using the appropriate API with error handling"""
+        if self.embedding_provider == "none":
+            print("🔄 Memory matching disabled (embedding_provider=none).")
+            return None
+
         try:
+            if self.embedding_provider == "google":
+                return self.embedding_client.embed_query(text)
             response = self.embedding_client.embeddings.create(
                 model=self.embedding, input=text
             )
@@ -55,8 +70,9 @@ class FinancialSituationMemory:
             if any(phrase in error_message for phrase in [
                 "quota", "rate limit", "insufficient_quota", "billing", "429"
             ]):
-                print(f"⚠️  OpenAI embedding quota exceeded: {str(e)}")
-                print("💡 Continuing without memory matching. Consider checking your OpenAI billing at https://platform.openai.com/usage")
+                provider_label = "Google" if self.embedding_provider == "google" else "OpenAI"
+                print(f"⚠️  {provider_label} embedding quota exceeded: {str(e)}")
+                print("💡 Continuing without memory matching.")
             else:
                 print(f"⚠️  Embedding error: {str(e)}")
                 print("💡 Continuing without memory matching.")

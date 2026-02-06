@@ -1,14 +1,14 @@
 """
-Setup script for the TradingAgents package.
+Setup script for the InvestingAgents package.
 """
 
 from setuptools import setup, find_packages
 
 setup(
-    name="tradingagents",
+    name="investingagents",
     version="0.1.0",
     description="Multi-Agents LLM Financial Trading Framework",
-    author="TradingAgents Team",
+    author="InvestingAgents Team",
     author_email="yijia.xiao@cs.ucla.edu",
     url="https://github.com/TauricResearch",
     packages=find_packages(),
@@ -29,7 +29,7 @@ setup(
     python_requires=">=3.10",
     entry_points={
         "console_scripts": [
-            "tradingagents=cli.main:app",
+            "investingagents=cli.main:app",
         ],
     },
     classifiers=[
