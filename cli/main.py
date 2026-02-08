@@ -1,8 +1,10 @@
-from typing import Optional
+from typing import Optional, Dict, List, Tuple
 import datetime
 import typer
 from pathlib import Path
 from functools import wraps
+import os
+import re
 from rich.console import Console
 from rich.panel import Panel
 from rich.spinner import Spinner
@@ -243,7 +245,7 @@ def update_display(layout, spinner_text=None):
     layout["header"].update(
         Panel(
             "[bold green]Welcome to Deep Value Intelligence CLI[/bold green]\n"
-            "[dim]© [Tauric Research](https://github.com/TauricResearch)[/dim]",
+            "[dim]© [LuLu Research](https://github.com/luluventures-research)[/dim]",
             title="Welcome to Deep Value Intelligence",
             border_style="green",
             padding=(1, 2),
@@ -457,7 +459,7 @@ def get_user_selections():
     welcome_content += "[bold]Workflow Steps:[/bold]\n"
     welcome_content += "I. Analyst Team → II. Research Team → III. Trader → IV. Risk Management → V. Portfolio Management\n\n"
     welcome_content += (
-        "[dim]Built by [Tauric Research](https://github.com/TauricResearch)[/dim]"
+        "[dim]Built by [LuLu Research](https://github.com/luluventures-research)[/dim]"
     )
 
     # Create and center the welcome box
@@ -623,11 +625,260 @@ def _filter_trading_recommendations(content: str) -> str:
     return '\n'.join(filtered_lines)
 
 
+def _clean_md_cell(text: str) -> str:
+    text = text.strip()
+    text = re.sub(r"^\*+|\*+$", "", text)
+    return text.strip()
+
+
+def _parse_metric_value(raw: str) -> Optional[float]:
+    text = _clean_md_cell(raw)
+    if not text:
+        return None
+
+    lower = text.lower()
+    if lower in {"n/a", "na", "neg", "-", "--"}:
+        return None
+
+    negative = False
+    if text.startswith("(") and text.endswith(")"):
+        negative = True
+        text = text[1:-1]
+
+    text = text.replace(",", "")
+    text = text.replace("$", "")
+    text = text.replace("x", "")
+    text = text.replace("%", "")
+    text = text.replace("+", "")
+    text = text.strip()
+
+    scale = 1.0
+    if text.endswith("T"):
+        scale = 1000.0
+        text = text[:-1]
+    elif text.endswith("B"):
+        scale = 1.0
+        text = text[:-1]
+    elif text.endswith("M"):
+        scale = 0.001
+        text = text[:-1]
+    elif text.endswith("K"):
+        scale = 0.000001
+        text = text[:-1]
+
+    m = re.search(r"-?\d*\.?\d+", text)
+    if not m:
+        return None
+    value = float(m.group(0)) * scale
+    return -value if negative else value
+
+
+def _extract_historical_metrics_table(report_text: str) -> Optional[Tuple[List[int], Dict[str, List[Optional[float]]]]]:
+    if not report_text:
+        return None
+
+    lines = report_text.splitlines()
+    table_blocks: List[List[str]] = []
+    current: List[str] = []
+    for line in lines:
+        if line.strip().startswith("|"):
+            current.append(line.strip())
+        elif current:
+            table_blocks.append(current)
+            current = []
+    if current:
+        table_blocks.append(current)
+
+    best_years: List[int] = []
+    best_series: Dict[str, List[Optional[float]]] = {}
+
+    for block in table_blocks:
+        if len(block) < 3:
+            continue
+        header_cells = [_clean_md_cell(x) for x in block[0].strip("|").split("|")]
+        if len(header_cells) < 4:
+            continue
+
+        years: List[int] = []
+        for cell in header_cells[1:]:
+            m = re.search(r"(19|20)\d{2}", cell)
+            years.append(int(m.group(0)) if m else -1)
+
+        if sum(1 for y in years if y > 0) < 6:
+            continue
+
+        aligned_years = [y for y in years if y > 0]
+        if len(aligned_years) < len(years):
+            normalized_years = [y if y > 0 else aligned_years[-1] + 1 for y in years]
+        else:
+            normalized_years = years
+
+        series: Dict[str, List[Optional[float]]] = {}
+        for row in block[2:]:
+            cells = [_clean_md_cell(x) for x in row.strip("|").split("|")]
+            if len(cells) < 2:
+                continue
+            metric_name = cells[0]
+            values = [_parse_metric_value(v) for v in cells[1:]]
+            if len(values) < len(normalized_years):
+                values.extend([None] * (len(normalized_years) - len(values)))
+            elif len(values) > len(normalized_years):
+                values = values[: len(normalized_years)]
+            series[metric_name] = values
+
+        if len(series) > len(best_series):
+            best_years = normalized_years
+            best_series = series
+
+    if not best_years or not best_series:
+        return None
+    return best_years, best_series
+
+
+def _normalize_metric_name(name: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", name.lower())
+
+
+def _pick_key_metrics(series: Dict[str, List[Optional[float]]]) -> List[Tuple[str, List[Optional[float]]]]:
+    preferred = [
+        ("Revenue", ["revenue", "revenues"]),
+        ("Gross Profit", ["grossprofit"]),
+        ("Net Income", ["netincome"]),
+        ("Free Cash Flow", ["freecashflow"]),
+        ("EPS", ["eps", "earningspershare"]),
+        ("Operating Margin (%)", ["operatingmargin"]),
+        ("Net Margin (%)", ["netmargin", "netincomemargin"]),
+        ("ROE (%)", ["roe", "returnonequity"]),
+        ("ROIC (%)", ["roic", "returnoninvestedcapital"]),
+        ("Debt-to-Equity", ["debttoequity"]),
+        ("P/E", ["peratio", "priceearning", "pricetoearning"]),
+        ("Market Price", ["marketprice"]),
+    ]
+
+    normalized_map = {_normalize_metric_name(k): k for k in series}
+    selected: List[Tuple[str, List[Optional[float]]]] = []
+    for label, aliases in preferred:
+        chosen_key = None
+        for norm_name, original in normalized_map.items():
+            if any(alias in norm_name for alias in aliases):
+                chosen_key = original
+                break
+        if chosen_key:
+            selected.append((label, series[chosen_key]))
+        if len(selected) >= 8:
+            break
+    return selected
+
+
+def _format_last_value(label: str, value: float) -> str:
+    if any(x in label.lower() for x in ["margin", "roe", "roic"]):
+        return f"{value:.1f}%"
+    if "p/e" in label.lower() or "debt-to-equity" in label.lower():
+        return f"{value:.2f}"
+    if abs(value) >= 100:
+        return f"{value:.0f}"
+    return f"{value:.2f}"
+
+
+def _plot_fundamentals_key_metrics(
+    fundamentals_report: str,
+    ticker: str,
+    analysis_date: str,
+    report_dir: Path,
+) -> List[str]:
+    parsed = _extract_historical_metrics_table(fundamentals_report)
+    if not parsed:
+        return []
+    years, series = parsed
+    selected = _pick_key_metrics(series)
+    if not selected:
+        return []
+
+    try:
+        os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
+        os.environ.setdefault("XDG_CACHE_HOME", "/tmp")
+        import matplotlib.pyplot as plt
+    except Exception:
+        return []
+
+    images_dir = report_dir / "images"
+    images_dir.mkdir(parents=True, exist_ok=True)
+
+    plt.style.use("seaborn-v0_8-whitegrid")
+    fig, axes = plt.subplots(2, 4, figsize=(20, 10), dpi=160, facecolor="#f8fafc")
+    axes_flat = axes.flatten()
+    colors = ["#0f766e", "#2563eb", "#0891b2", "#7c3aed", "#ea580c", "#16a34a", "#b45309", "#4f46e5"]
+
+    for idx, ax in enumerate(axes_flat):
+        if idx >= len(selected):
+            ax.axis("off")
+            continue
+
+        label, values = selected[idx]
+        x_vals: List[int] = []
+        y_vals: List[float] = []
+        for x, y in zip(years, values):
+            if isinstance(y, (int, float)):
+                x_vals.append(x)
+                y_vals.append(float(y))
+        if len(x_vals) < 2:
+            ax.axis("off")
+            continue
+
+        color = colors[idx % len(colors)]
+        ax.plot(x_vals, y_vals, color=color, linewidth=2.8, marker="o", markersize=4.8)
+        ax.fill_between(x_vals, y_vals, [min(y_vals)] * len(y_vals), color=color, alpha=0.08)
+        ax.set_title(label, fontsize=13, weight="bold", color="#0f172a")
+        ax.grid(alpha=0.25, linestyle="--")
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.tick_params(axis="x", labelrotation=30, labelsize=9)
+        ax.tick_params(axis="y", labelsize=9)
+
+        latest_x = x_vals[-1]
+        latest_y = y_vals[-1]
+        ax.scatter([latest_x], [latest_y], color=color, s=42, zorder=3)
+        ax.annotate(
+            _format_last_value(label, latest_y),
+            xy=(latest_x, latest_y),
+            xytext=(6, 8),
+            textcoords="offset points",
+            fontsize=9,
+            color="#111827",
+            bbox={"boxstyle": "round,pad=0.2", "facecolor": "#ffffff", "edgecolor": "#d1d5db", "alpha": 0.85},
+        )
+
+    fig.suptitle(
+        f"{ticker} Fundamentals Key Metrics (10-Year Trend) • {analysis_date}",
+        fontsize=18,
+        weight="bold",
+        color="#0b1324",
+    )
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
+
+    image_name = f"{ticker}_fundamentals_key_metrics_{analysis_date}.png"
+    image_path = images_dir / image_name
+    fig.savefig(image_path, bbox_inches="tight")
+    plt.close(fig)
+
+    return [f"images/{image_name}"]
+
+
 def generate_comprehensive_report(final_state, ticker, analysis_date, report_dir):
     """Generate a comprehensive markdown report combining all analysis."""
     from datetime import datetime
 
     report_lines = []
+
+    fundamentals_chart_paths: List[str] = []
+    fundamentals_report_text = _ensure_string(final_state.get("fundamentals_report", ""))
+    if fundamentals_report_text:
+        fundamentals_chart_paths = _plot_fundamentals_key_metrics(
+            fundamentals_report_text,
+            ticker,
+            analysis_date,
+            report_dir,
+        )
 
     # Header
     report_lines.append(f"# {ticker} Deep Value Intelligence")
@@ -678,9 +929,15 @@ def generate_comprehensive_report(final_state, ticker, analysis_date, report_dir
     report_lines.append("### Fundamentals Analysis")
     report_lines.append("")
     if final_state.get("fundamentals_report"):
-        report_lines.append(_ensure_string(final_state["fundamentals_report"]))
+        report_lines.append(fundamentals_report_text)
     else:
         report_lines.append("*No fundamentals analysis available.*")
+    if fundamentals_chart_paths:
+        report_lines.append("")
+        report_lines.append("#### Fundamentals Key Metrics Charts")
+        report_lines.append("")
+        for chart_path in fundamentals_chart_paths:
+            report_lines.append(f"![Fundamentals Key Metrics]({chart_path})")
     report_lines.append("")
     report_lines.append("---")
     report_lines.append("")
