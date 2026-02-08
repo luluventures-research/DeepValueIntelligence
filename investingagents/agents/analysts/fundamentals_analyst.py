@@ -1,6 +1,8 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import AIMessage
 import time
 import json
+from investingagents.dataflows.interface import get_enhanced_fundamentals
 
 
 def create_fundamentals_analyst(llm, toolkit):
@@ -102,16 +104,38 @@ def create_fundamentals_analyst(llm, toolkit):
 
         chain = prompt | llm.bind_tools(tools)
 
-        result = chain.invoke(state["messages"])
-
         report = ""
+        try:
+            result = chain.invoke(state["messages"])
+        except Exception as exc:
+            error_text = f"{type(exc).__name__}: {exc}".lower()
+            if "timeout" not in error_text:
+                raise
 
-        if len(result.tool_calls) == 0:
+            # Fallback path so one LLM timeout does not abort the entire graph.
+            try:
+                fallback_data = get_enhanced_fundamentals(ticker, current_date)
+                report = (
+                    "### Fundamentals Analyst Fallback Report\n"
+                    f"Primary LLM analysis timed out for {ticker} on {current_date}. "
+                    "Using direct data retrieval fallback so the workflow can continue.\n\n"
+                    f"{fallback_data}\n\n"
+                    "Note: For full narrative analysis, rerun with a higher timeout via "
+                    "`--llm-timeout 3600` or use a faster model."
+                )
+            except Exception as fallback_exc:
+                report = (
+                    "### Fundamentals Analyst Fallback Report\n"
+                    f"Primary LLM analysis timed out for {ticker} on {current_date}, "
+                    "and fallback data retrieval also failed.\n\n"
+                    f"Fallback error: {type(fallback_exc).__name__}: {fallback_exc}\n\n"
+                    "Consider rerunning with a higher timeout via `--llm-timeout 3600`."
+                )
+
+            result = AIMessage(content=report)
+
+        if len(getattr(result, "tool_calls", [])) == 0 and not report:
             report = result.content
-        else:
-            # If there are tool calls, we'll let the tools execute and come back
-            # The report will be generated on the next iteration when tools are done
-            pass
 
         return {
             "messages": [result],

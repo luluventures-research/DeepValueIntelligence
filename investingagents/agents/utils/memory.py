@@ -1,7 +1,6 @@
 import chromadb
 from chromadb.config import Settings
 from openai import OpenAI
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 
 class FinancialSituationMemory:
@@ -32,11 +31,17 @@ class FinancialSituationMemory:
                 raise ValueError(
                     "GOOGLE_API_KEY is required when embedding_provider is set to 'google'."
                 )
-            self.embedding = self.embedding_model or "text-embedding-004"
-            self.embedding_client = GoogleGenerativeAIEmbeddings(
-                model=self.embedding,
-                google_api_key=config["google_api_key"],
-            )
+            # Use the current Gemini embedding model by default (text-embedding-004 is deprecated)
+            self.embedding = self.embedding_model or "gemini-embedding-001"
+            try:
+                from google import genai
+            except Exception as exc:
+                raise ValueError(
+                    "Google embeddings require the google-genai package. "
+                    "Install it with: pip install google-genai"
+                ) from exc
+            self.embedding_client_type = "google-genai"
+            self.embedding_client = genai.Client(api_key=config["google_api_key"])
         elif self.embedding_provider == "none":
             self.embedding = None
             self.embedding_client = None
@@ -59,6 +64,16 @@ class FinancialSituationMemory:
 
         try:
             if self.embedding_provider == "google":
+                if getattr(self, "embedding_client_type", "langchain") == "google-genai":
+                    response = self.embedding_client.models.embed_content(
+                        model=self.embedding,
+                        contents=text,
+                    )
+                    if hasattr(response, "embeddings") and response.embeddings:
+                        return response.embeddings[0].values
+                    if hasattr(response, "embedding") and response.embedding:
+                        return response.embedding.values
+                    raise ValueError("Google embedding response missing embeddings.")
                 return self.embedding_client.embed_query(text)
             response = self.embedding_client.embeddings.create(
                 model=self.embedding, input=text

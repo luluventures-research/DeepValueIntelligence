@@ -534,6 +534,14 @@ def get_user_selections():
     selected_shallow_thinker = select_shallow_thinking_agent(selected_llm_provider)
     selected_deep_thinker = select_deep_thinking_agent(selected_llm_provider)
 
+    # Step 7: Thumbnails
+    console.print(
+        create_question_box(
+            "Step 7: Report Thumbnails", "Generate report thumbnails with Gemini (Nano Banana)?"
+        )
+    )
+    generate_thumbnail = typer.confirm("", default=False)
+
     return {
         "ticker": selected_ticker,
         "analysis_date": analysis_date,
@@ -543,6 +551,7 @@ def get_user_selections():
         "backend_url": backend_url,
         "shallow_thinker": selected_shallow_thinker,
         "deep_thinker": selected_deep_thinker,
+        "generate_thumbnail": generate_thumbnail,
     }
 
 
@@ -1465,6 +1474,22 @@ def run_analysis():
             report_dir
         )
         console.print(f"\n[green]Comprehensive report saved to:[/green] {comprehensive_report_path}")
+
+        if selections.get("generate_thumbnail"):
+            try:
+                from utils.thumbnail import generate_thumbnails
+                company_label = final_state.get("company_of_interest", selections["ticker"])
+                saved = generate_thumbnails(
+                    company_label,
+                    report_dir,
+                    api_key=config.get("google_api_key"),
+                    ticker=selections["ticker"],
+                    analysis_date=selections["analysis_date"],
+                )
+                if saved:
+                    console.print(f"[green]Thumbnails saved:[/green] {', '.join(str(p) for p in saved)}")
+            except Exception as exc:
+                console.print(f"[yellow]Thumbnail generation failed:[/yellow] {exc}")
 
         # Display the complete final report
         display_complete_report(final_state)
