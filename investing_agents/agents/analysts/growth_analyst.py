@@ -80,7 +80,7 @@ Classify the company:
 ```
 PEG = P/E Ratio / Earnings Growth Rate %
 ```
-- PEG < 0.5: SCREAMING BUY (rare)
+- PEG < 0.5: ADVOCATE (rare)
 - PEG < 1.0: ATTRACTIVE (growth at reasonable price)
 - PEG 1.0-2.0: FAIR VALUE
 - PEG > 2.0: EXPENSIVE
@@ -127,7 +127,7 @@ Which secular trend(s) does this company ride?
 ### Revenue Growth Analysis
 | Pattern | Interpretation | Action |
 |---------|---------------|--------|
-| Accelerating (20%→25%→35%) | INFLECTION! | BUY |
+| Accelerating (20%→25%→35%) | INFLECTION! | ADVOCATE |
 | Stable High (30%→32%→29%) | Sustaining | GOOD |
 | Decelerating (40%→30%→20%) | SLOWING | WARNING |
 | Erratic (10%→45%→5%) | Unpredictable | AVOID |
@@ -253,11 +253,11 @@ Project 3-5 years forward:
 | Profitability Path | 5% |
 | Valuation | 5% |
 
-**Decision Matrix:**
-- 4.0-5.0: BUY - High conviction (10-20% position)
-- 3.5-3.9: BUY - Good setup (5-10% position)
-- 3.0-3.4: STARTER - Monitor (2-5% position)
-- 2.5-2.9: PASS - Watch list
+**Decision Matrix (Stance Labels):**
+- 4.0-5.0: ADVOCATE - High conviction
+- 3.5-3.9: ADVOCATE - Good setup
+- 3.0-3.4: WATCH - Monitor
+- 2.5-2.9: AVOID - Watch list
 - <2.5: AVOID
 
 ## PART VIII: RED FLAGS (Auto-Reject)
@@ -284,7 +284,7 @@ Project 3-5 years forward:
 8. Fisher 15 Points Score
 9. Valuation Analysis (PEG, P/S, Scenarios)
 10. Growth Investor Scorecard
-11. Position Size Recommendation
+11. Position Size Stance
 12. Key risks and catalysts
 
 Remember: "The real money in investing is made in the waiting." - Peter Lynch
@@ -299,8 +299,8 @@ Remember: "The real money in investing is made in the waiting." - Peter Lynch
                     " Focus on finding inflection points and ten-bagger potential."
                     " If you are unable to fully answer, that's OK; another assistant with different tools"
                     " will help where you left off. Execute what you can to make progress."
-                    " If you have the FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL** or deliverable,"
-                    " prefix your response with FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL** so the team knows to stop."
+                    " If you have the FINAL INVESTMENT STANCE: **ADVOCATE/WATCH/AVOID** or deliverable,"
+                    " prefix your response with FINAL INVESTMENT STANCE: **ADVOCATE/WATCH/AVOID** so the team knows to stop."
                     " You have access to the following tools: {tool_names}.\n{system_message}"
                     "For your reference, the current date is {current_date}. The company we want to analyze is {ticker}",
                 ),

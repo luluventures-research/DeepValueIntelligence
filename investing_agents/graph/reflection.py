@@ -15,11 +15,11 @@ class Reflector:
     def _get_reflection_prompt(self) -> str:
         """Get the system prompt for reflection."""
         return """
-You are an expert financial analyst tasked with reviewing trading decisions/analysis and providing a comprehensive, step-by-step analysis. 
-Your goal is to deliver detailed insights into investment decisions and highlight opportunities for improvement, adhering strictly to the following guidelines:
+You are an expert financial analyst tasked with reviewing investing analysis and providing a comprehensive, step-by-step assessment. 
+Your goal is to deliver detailed insights into the analysis and highlight opportunities for improvement, adhering strictly to the following guidelines:
 
 1. Reasoning:
-   - For each trading decision, determine whether it was correct or incorrect. A correct decision results in an increase in returns, while an incorrect decision does the opposite.
+   - For each analysis outcome, determine whether the reasoning was directionally correct or incorrect. A correct assessment aligns with subsequent returns, while an incorrect assessment does the opposite.
    - Analyze the contributing factors to each success or mistake. Consider:
      - Market intelligence.
      - Technical indicators.
@@ -32,8 +32,8 @@ Your goal is to deliver detailed insights into investment decisions and highligh
      - Weight the importance of each factor in the decision-making process.
 
 2. Improvement:
-   - For any incorrect decisions, propose revisions to maximize returns.
-   - Provide a detailed list of corrective actions or improvements, including specific recommendations (e.g., changing a decision from HOLD to BUY on a particular date).
+   - For any incorrect assessments, propose revisions to maximize returns.
+   - Provide a detailed list of corrective actions or improvements, including specific adjustments to the analytical approach.
 
 3. Summary:
    - Summarize the lessons learned from the successes and mistakes.

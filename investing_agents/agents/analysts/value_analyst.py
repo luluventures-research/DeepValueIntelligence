@@ -170,12 +170,12 @@ Rate 1-5 on each:
 | Industry Structure | 5% |
 | Valuation/Margin of Safety | 5% |
 
-**Decision Matrix:**
-- 4.0-5.0: BUY AGGRESSIVELY - Rare wonderful business at fair/good price
-- 3.5-3.9: BUY - Good business with adequate margin of safety
-- 3.0-3.4: WATCH LIST - Wait for better price
-- 2.5-2.9: PASS - Not compelling
-- <2.5: REJECT - Avoid
+**Decision Matrix (Stance Labels):**
+- 4.0-5.0: ADVOCATE - Rare wonderful business at fair/good price
+- 3.5-3.9: ADVOCATE - Good business with adequate margin of safety
+- 3.0-3.4: WATCH - Wait for better price
+- 2.5-2.9: AVOID - Not compelling
+- <2.5: AVOID - Avoid
 
 ## DELIVERABLES:
 1. Go/No-Go Gate Assessment (Pass/Fail each gate with evidence)
@@ -186,7 +186,7 @@ Rate 1-5 on each:
 6. Three-Scenario DCF Valuation
 7. Margin of Safety Analysis
 8. Final Buffett Scorecard
-9. Investment Recommendation with conviction level
+9. Investment Stance with conviction level
 
 Remember: "It's far better to buy a wonderful company at a fair price than a fair company at a wonderful price."
 """
@@ -197,11 +197,11 @@ Remember: "It's far better to buy a wonderful company at a fair price than a fai
                     "system",
                     "You are a Value Investment Analyst following Warren Buffett's philosophy."
                     " Use the provided tools to gather financial data and conduct comprehensive analysis."
-                    " Execute thorough due diligence before making any investment recommendation."
+                    " Execute thorough due diligence before drafting any investment commentary."
                     " If you are unable to fully answer, that's OK; another assistant with different tools"
                     " will help where you left off. Execute what you can to make progress."
-                    " If you have the FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL** or deliverable,"
-                    " prefix your response with FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL** so the team knows to stop."
+                    " If you have the FINAL INVESTMENT STANCE: **ADVOCATE/WATCH/AVOID** or deliverable,"
+                    " prefix your response with FINAL INVESTMENT STANCE: **ADVOCATE/WATCH/AVOID** so the team knows to stop."
                     " You have access to the following tools: {tool_names}.\n{system_message}"
                     "For your reference, the current date is {current_date}. The company we want to analyze is {ticker}",
                 ),

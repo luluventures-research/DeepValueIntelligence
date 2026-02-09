@@ -5,9 +5,9 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph, START
 from langgraph.prebuilt import ToolNode
 
-from investingagents.agents import *
-from investingagents.agents.utils.agent_states import AgentState
-from investingagents.agents.utils.agent_utils import Toolkit
+from investing_agents.agents import *
+from investing_agents.agents.utils.agent_states import AgentState
+from investing_agents.agents.utils.agent_utils import Toolkit
 
 from .conditional_logic import ConditionalLogic
 
@@ -55,7 +55,7 @@ class GraphSetup:
                 - "growth": Growth analyst (Lynch/Druckenmiller/Fisher methodology)
         """
         if len(selected_analysts) == 0:
-            raise ValueError("Trading Agents Graph Setup Error: no analysts selected!")
+            raise ValueError("Investing Agents Graph Setup Error: no analysts selected!")
 
         # Create analyst nodes
         analyst_nodes = {}
@@ -139,7 +139,7 @@ class GraphSetup:
         workflow.add_node("Bull Researcher", bull_researcher_node)
         workflow.add_node("Bear Researcher", bear_researcher_node)
         workflow.add_node("Research Manager", research_manager_node)
-        workflow.add_node("Trader", trader_node)
+        workflow.add_node("Investor", trader_node)
         workflow.add_node("Risky Analyst", risky_analyst)
         workflow.add_node("Neutral Analyst", neutral_analyst)
         workflow.add_node("Safe Analyst", safe_analyst)
@@ -188,8 +188,8 @@ class GraphSetup:
                 "Research Manager": "Research Manager",
             },
         )
-        workflow.add_edge("Research Manager", "Trader")
-        workflow.add_edge("Trader", "Risky Analyst")
+        workflow.add_edge("Research Manager", "Investor")
+        workflow.add_edge("Investor", "Risky Analyst")
         workflow.add_conditional_edges(
             "Risky Analyst",
             self.conditional_logic.should_continue_risk_analysis,

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-InvestingAgents is a multi-agent LLM financial trading framework that mirrors real-world trading firm dynamics. Specialized LLM-powered agents (analysts, researchers, traders, risk managers) collaborate to evaluate market conditions and make trading decisions through structured debates.
+InvestingAgents is a multi-agent LLM financial investing framework that mirrors real-world trading firm dynamics. Specialized LLM-powered agents (analysts, researchers, traders, risk managers) collaborate to evaluate market conditions and make investing decisions through structured debates.
 
 ## Common Commands
 
@@ -31,39 +31,39 @@ export ANTHROPIC_API_KEY="your-anthropic-api-key" # For Claude models
 ## Architecture
 
 ### Core Flow
-The system processes trading decisions through a LangGraph-based pipeline:
+The system processes investing decisions through a LangGraph-based pipeline:
 
 ```
-Analyst Team → Research Team (Bull/Bear Debate) → Trader → Risk Management Team → Portfolio Manager
+Analyst Team → Research Team (Bull/Bear Debate) → Investor → Risk Management Team → Portfolio Manager
 ```
 
 ### Key Components
 
-**`investingagents/graph/trading_graph.py`** - `InvestingAgentsGraph` is the central orchestrator that:
+**`investing_agents/graph/trading_graph.py`** - `InvestingAgentsGraph` is the central orchestrator that:
 - Initializes LLMs based on provider config (OpenAI, Google, Anthropic)
 - Creates tool nodes for different data sources (market, social, news, fundamentals)
 - Manages the multi-agent workflow via LangGraph
-- Entry point: `propagate(ticker, date)` returns final state and trading decision
+- Entry point: `propagate(ticker, date)` returns final state and investing decision
 
-**`investingagents/agents/`** - Specialized agents organized by role:
+**`investing_agents/agents/`** - Specialized agents organized by role:
 - `analysts/` - Market, News, Social Media, Fundamentals analysts
 - `researchers/` - Bull and Bear researchers for debate
 - `managers/` - Research Manager and Risk Manager
 - `risk_mgmt/` - Aggressive, Conservative, Neutral debators
-- `trader/` - Makes trading decisions based on research
+- `trader/` - Makes investing decisions based on research
 
-**`investingagents/dataflows/interface.py`** - Data retrieval tools including:
+**`investing_agents/dataflows/interface.py`** - Data retrieval tools including:
 - Yahoo Finance, SimFin (balance sheets, cash flow, income statements)
 - Finnhub (news, insider sentiment, transactions)
 - Reddit, Google News for sentiment
 - Technical indicators via stockstats
 
-**`investingagents/default_config.py`** - Configuration for LLM providers, debate rounds, data paths
+**`investing_agents/default_config.py`** - Configuration for LLM providers, debate rounds, data paths
 
 **`cli/main.py`** - Rich interactive CLI with real-time progress visualization
 
 ### Agent States
-Defined in `investingagents/agents/utils/agent_states.py`:
+Defined in `investing_agents/agents/utils/agent_states.py`:
 - `AgentState` - Main workflow state
 - `InvestDebateState` - Bull vs Bear research debate
 - `RiskDebateState` - Risk management discussion
@@ -81,8 +81,8 @@ Model selection is automatic based on model name prefix (gemini/google → Googl
 ## Python Usage
 
 ```python
-from investingagents.graph.trading_graph import InvestingAgentsGraph
-from investingagents.default_config import DEFAULT_CONFIG
+from investing_agents.graph.trading_graph import InvestingAgentsGraph
+from investing_agents.default_config import DEFAULT_CONFIG
 
 config = DEFAULT_CONFIG.copy()
 config["deep_think_llm"] = "gpt-4o"

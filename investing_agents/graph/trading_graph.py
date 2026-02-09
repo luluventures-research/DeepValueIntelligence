@@ -11,7 +11,7 @@ from typing import Dict, Any, Tuple, List, Optional
 # This works around a bug in langchain-google where timeout isn't properly passed
 # See: https://github.com/langchain-ai/langchain-google/issues/731
 import httpx
-from investingagents.default_config import DEFAULT_CONFIG
+from investing_agents.default_config import DEFAULT_CONFIG
 _llm_timeout = DEFAULT_CONFIG.get("llm_timeout", 1800)
 httpx._config.DEFAULT_TIMEOUT_CONFIG = httpx.Timeout(timeout=float(_llm_timeout))
 
@@ -25,14 +25,14 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 from langgraph.prebuilt import ToolNode
 
-from investingagents.agents import *
-from investingagents.agents.utils.memory import FinancialSituationMemory
-from investingagents.agents.utils.agent_states import (
+from investing_agents.agents import *
+from investing_agents.agents.utils.memory import FinancialSituationMemory
+from investing_agents.agents.utils.agent_states import (
     AgentState,
     InvestDebateState,
     RiskDebateState,
 )
-from investingagents.dataflows.interface import set_config
+from investing_agents.dataflows.interface import set_config
 
 from .conditional_logic import ConditionalLogic
 from .setup import GraphSetup

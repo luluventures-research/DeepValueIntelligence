@@ -21,7 +21,7 @@ def create_research_manager(llm, memory):
         for i, rec in enumerate(past_memories, 1):
             past_memory_str += rec["recommendation"] + "\n\n"
 
-        prompt = f"""As the value investing portfolio manager following Warren Buffett's philosophy, your role is to critically evaluate this round of debate and make a definitive decision: align with the bear analyst, the bull analyst, or choose Hold only if it is strongly justified based on the arguments presented.
+        prompt = f"""As the value investing portfolio manager following Warren Buffett's philosophy, your role is to critically evaluate this round of debate and synthesize commentary that captures the strongest bull and bear arguments, ending with a stance label: ADVOCATE, WATCH, or AVOID.
 
 WARREN BUFFETT VALUE INVESTING FRAMEWORK - Apply these principles when evaluating the debate:
 1. **Business Quality First**: Prioritize companies with durable competitive advantages (economic moats)
@@ -38,13 +38,13 @@ SELECTIVE CONTRARIAN ANALYSIS - Apply critical thinking to news and sentiment:
 - **Critical Questions**: What assumptions are markets making? What would have to be true for current sentiment to be justified? What evidence contradicts popular narratives?
 - **Selective Approach**: Be contrarian when you have superior business insight, not just to oppose consensus. Sometimes markets are efficient.
 
-Summarize the key points from both sides concisely, focusing on the most compelling evidence or reasoning through the lens of value investing principles. Your recommendation—Buy, Sell, or Hold—must be clear and actionable. Avoid defaulting to Hold simply because both sides have valid points; commit to a stance grounded in the debate's strongest arguments about business fundamentals and long-term value creation.
+Summarize the key points from both sides concisely, focusing on the most compelling evidence or reasoning through the lens of value investing principles. Provide a clear, balanced takeaway and a final stance label (ADVOCATE/WATCH/AVOID).
 
-Additionally, develop a detailed investment plan for the trader. This should include:
+Additionally, develop a detailed investor commentary. This should include:
 
-Your Recommendation: A decisive stance supported by the most convincing arguments about business quality and intrinsic value.
-Rationale: An explanation of why these arguments lead to your conclusion from a value investing perspective.
-Strategic Actions: Concrete steps for implementing the recommendation with a long-term focus.
+Core Takeaway: A decisive takeaway supported by the most convincing arguments about business quality and intrinsic value.
+Rationale: An explanation of why these arguments lead to your takeaway from a value investing perspective.
+Monitoring Plan: Concrete items to watch over the next 1-4 quarters that would strengthen or weaken the thesis.
 
 Take into account your past mistakes on similar situations. Use these insights to refine your decision-making and ensure you are learning and improving. Present your analysis conversationally, as if speaking naturally, without special formatting.
 

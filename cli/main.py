@@ -22,8 +22,8 @@ from rich import box
 from rich.align import Align
 from rich.rule import Rule
 
-from investingagents.graph.trading_graph import InvestingAgentsGraph
-from investingagents.default_config import DEFAULT_CONFIG
+from investing_agents.graph.trading_graph import InvestingAgentsGraph
+from investing_agents.default_config import DEFAULT_CONFIG
 from cli.models import AnalystType
 from cli.utils import *
 
@@ -31,7 +31,7 @@ console = Console()
 
 app = typer.Typer(
     name="DeepValueIntelligence",
-    help="Deep Value Intelligence CLI: Multi-Agents LLM Financial Trading Framework",
+    help="Deep Value Intelligence CLI: Multi-Agents LLM Financial Investing Framework",
     add_completion=True,  # Enable shell completion
 )
 
@@ -89,8 +89,8 @@ class MessageBuffer:
             "Bull Researcher": "pending",
             "Bear Researcher": "pending",
             "Research Manager": "pending",
-            # Trading Team
-            "Trader": "pending",
+            # Investing Team
+            "Investor": "pending",
             # Risk Management Team
             "Risky Analyst": "pending",
             "Neutral Analyst": "pending",
@@ -150,7 +150,7 @@ class MessageBuffer:
                 "value_report": "Value Analysis (Buffett)",
                 "growth_report": "Growth Analysis (Lynch/Druckenmiller/Fisher)",
                 "investment_plan": "Research Team Decision",
-                "trader_investment_plan": "Trading Team Plan",
+                "trader_investment_plan": "Investing Team Plan",
                 "final_trade_decision": "Deep Values Strategy",
             }
             # Ensure content is a string (handle Gemini list format)
@@ -208,9 +208,9 @@ class MessageBuffer:
             report_parts.append("## Research Team Decision")
             report_parts.append(f"{_ensure_string(self.report_sections['investment_plan'])}")
 
-        # Trading Team Reports
+        # Investing Team Reports
         if self.report_sections["trader_investment_plan"]:
-            report_parts.append("## Trading Team Plan")
+            report_parts.append("## Investing Team Plan")
             report_parts.append(f"{_ensure_string(self.report_sections['trader_investment_plan'])}")
 
         # Deep Values Strategy
@@ -278,7 +278,7 @@ def update_display(layout, spinner_text=None):
             "News Analyst",
         ],
         "Research Team": ["Bull Researcher", "Bear Researcher", "Research Manager"],
-        "Trading Team": ["Trader"],
+        "Investing Team": ["Investor"],
         "Risk Management": ["Risky Analyst", "Neutral Analyst", "Safe Analyst"],
         "Portfolio Management": ["Portfolio Manager"],
     }
@@ -455,9 +455,9 @@ def get_user_selections():
 
     # Create welcome box content
     welcome_content = f"{welcome_ascii}\n"
-    welcome_content += "[bold green]Deep Value Intelligence: Multi-Agents LLM Financial Trading Framework - CLI[/bold green]\n\n"
+    welcome_content += "[bold green]Deep Value Intelligence: Multi-Agents LLM Financial Investing Framework - CLI[/bold green]\n\n"
     welcome_content += "[bold]Workflow Steps:[/bold]\n"
-    welcome_content += "I. Analyst Team → II. Research Team → III. Trader → IV. Risk Management → V. Portfolio Management\n\n"
+    welcome_content += "I. Analyst Team → II. Research Team → III. Investor → IV. Risk Management → V. Portfolio Management\n\n"
     welcome_content += (
         "[dim]Built by [LuLu Research](https://github.com/luluventures-research)[/dim]"
     )
@@ -468,7 +468,7 @@ def get_user_selections():
         border_style="green",
         padding=(1, 2),
         title="Welcome to Deep Value Intelligence",
-        subtitle="Multi-Agents LLM Financial Trading Framework",
+        subtitle="Multi-Agents LLM Financial Investing Framework",
     )
     console.print(Align.center(welcome_box))
     console.print()  # Add a blank line after the welcome box
@@ -593,7 +593,7 @@ def get_analysis_date():
 
 def _filter_trading_recommendations(content: str) -> str:
     """
-    Filter out explicit BUY/SELL/HOLD recommendations from content for the Intelligence Summary.
+    Filter out legacy BUY/SELL/HOLD and current ADVOCATE/WATCH/AVOID labels from content for the Intelligence Summary.
     Removes lines containing explicit trading decisions while preserving the analysis.
     """
     import re
@@ -606,11 +606,11 @@ def _filter_trading_recommendations(content: str) -> str:
 
     # Patterns to filter out (case-insensitive)
     skip_patterns = [
-        r'^\s*\*{0,2}(FINAL\s+)?(DECISION|RECOMMENDATION|VERDICT)\s*:\s*\*{0,2}\s*(BUY|SELL|HOLD|STRONG\s+BUY|STRONG\s+SELL)',
-        r'^\s*\*{0,2}(The\s+)?(recommendation|decision)\s+(is\s+to\s+)?(BUY|SELL|HOLD)',
-        r'^\s*\*{0,2}(TRANSACTION\s+PROPOSAL)\s*:\s*\*{0,2}\s*(BUY|SELL|HOLD)',
-        r'^\s*-?\s*\*{0,2}Action\s*:\s*\*{0,2}\s*(BUY|SELL|HOLD)',
-        r'^\s*>\s*\*{0,2}(DECISION|RECOMMENDATION)\s*:\s*(BUY|SELL|HOLD)',
+        r'^\s*\*{0,2}(FINAL\s+)?(DECISION|RECOMMENDATION|VERDICT|STANCE)\s*:\s*\*{0,2}\s*(BUY|SELL|HOLD|ADVOCATE|WATCH|AVOID|STRONG\s+BUY|STRONG\s+SELL)',
+        r'^\s*\*{0,2}(The\s+)?(recommendation|decision|stance)\s+(is\s+to\s+)?(BUY|SELL|HOLD|ADVOCATE|WATCH|AVOID)',
+        r'^\s*\*{0,2}(TRANSACTION\s+PROPOSAL|INVESTMENT\s+STANCE)\s*:\s*\*{0,2}\s*(BUY|SELL|HOLD|ADVOCATE|WATCH|AVOID)',
+        r'^\s*-?\s*\*{0,2}Action\s*:\s*\*{0,2}\s*(BUY|SELL|HOLD|ADVOCATE|WATCH|AVOID)',
+        r'^\s*>\s*\*{0,2}(DECISION|RECOMMENDATION|STANCE)\s*:\s*(BUY|SELL|HOLD|ADVOCATE|WATCH|AVOID)',
     ]
 
     for line in lines:
@@ -623,6 +623,95 @@ def _filter_trading_recommendations(content: str) -> str:
             filtered_lines.append(line)
 
     return '\n'.join(filtered_lines)
+
+
+def _extract_core_thesis(paragraphs: List[str]) -> str:
+    for para in paragraphs:
+        if para.strip():
+            sentences = re.split(r"(?<=[.!?])\s+", para.strip())
+            return " ".join(sentences[:2]).strip()
+    return ""
+
+
+def _extract_watchpoints(lines: List[str]) -> List[str]:
+    watch_keywords = ("if ", "unless", "watch", "monitor", "risk", "downside", "catalyst", "trigger")
+    watchpoints = []
+    for line in lines:
+        lower = line.lower()
+        if any(k in lower for k in watch_keywords):
+            cleaned = line.strip().lstrip("-* ").strip()
+            if cleaned:
+                watchpoints.append(cleaned)
+    return watchpoints
+
+
+def _derive_stance(text: str) -> str:
+    lower = text.lower()
+    if any(k in lower for k in ["undervalued", "discount", "margin of safety", "cheap"]):
+        return "Undervalued"
+    if any(k in lower for k in ["overvalued", "expensive", "stretched", "richly valued"]):
+        return "Overextended"
+    if any(k in lower for k in ["fairly valued", "fair value", "balanced valuation"]):
+        return "Fairly Valued"
+    return "Unclear"
+
+
+def _derive_confidence(text: str) -> str:
+    lower = text.lower()
+    if any(k in lower for k in ["high conviction", "very confident", "strong conviction"]):
+        return "High"
+    if any(k in lower for k in ["uncertain", "low confidence", "limited visibility", "mixed signals"]):
+        return "Low"
+    return "Medium"
+
+
+def _format_intelligence_summary(content: str) -> str:
+    if not content:
+        return "*No executive summary available.*"
+
+    filtered = _filter_trading_recommendations(content)
+    paragraphs = [p for p in filtered.split("\n\n") if p.strip()]
+    lines = [ln for ln in filtered.splitlines() if ln.strip()]
+
+    core_thesis = _extract_core_thesis(paragraphs) or "No concise thesis extracted."
+    watchpoints = _extract_watchpoints(lines)
+    stance = _derive_stance(filtered)
+    confidence = _derive_confidence(filtered)
+
+    summary_lines = []
+    summary_lines.append("### Thesis + Conditions")
+    summary_lines.append("")
+    summary_lines.append(f"**Core Thesis:** {core_thesis}")
+    summary_lines.append("")
+    summary_lines.append("**Key Risks:**")
+    if watchpoints:
+        for wp in watchpoints[:5]:
+            summary_lines.append(f"- {wp}")
+    else:
+        summary_lines.append("- Not explicitly stated.")
+    summary_lines.append("")
+    summary_lines.append("**What Would Change Our View:**")
+    if watchpoints:
+        for wp in watchpoints[:5]:
+            summary_lines.append(f"- {wp}")
+    else:
+        summary_lines.append("- Not explicitly stated.")
+    summary_lines.append("")
+    summary_lines.append(f"**Confidence:** {confidence}")
+    summary_lines.append("")
+    summary_lines.append("### Stance Spectrum (Action-Free)")
+    summary_lines.append("")
+    summary_lines.append(f"**Stance:** {stance}")
+    summary_lines.append("**Moat Strength:** Unclear")
+    summary_lines.append("**Capital Allocation:** Unclear")
+    summary_lines.append("**Balance Sheet Risk:** Unclear")
+    summary_lines.append(f"**Confidence:** {confidence}")
+    summary_lines.append("")
+    summary_lines.append("### Expanded Commentary")
+    summary_lines.append("")
+    summary_lines.append(filtered)
+
+    return "\n".join(summary_lines)
 
 
 def _clean_md_cell(text: str) -> str:
@@ -900,21 +989,19 @@ def generate_comprehensive_report(final_state, ticker, analysis_date, report_dir
     report_lines.append("   - [Market Analysis](#market-analysis)")
     report_lines.append("   - [Social Sentiment Analysis](#social-sentiment-analysis)")
     report_lines.append("   - [News Analysis](#news-analysis)")
-    report_lines.append("3. [Research Team Decision](#research-team-decision)")
-    report_lines.append("4. [Trading Team Plan](#trading-team-plan)")
-    report_lines.append("5. [Deep Values Strategy](#deep-values-strategy)")
+    report_lines.append("3. [Research Team Commentary](#research-team-commentary)")
+    report_lines.append("4. [Investing Team Commentary](#investing-team-commentary)")
+    report_lines.append("5. [Deep Values Commentary](#deep-values-commentary)")
     report_lines.append("")
     report_lines.append("---")
     report_lines.append("")
 
-    # Intelligence Summary (with BUY/SELL/HOLD recommendations filtered out)
+    # Intelligence Summary (legacy action labels filtered out)
     report_lines.append("## Intelligence Summary")
     report_lines.append("")
     if final_state.get("final_trade_decision"):
         decision_content = _ensure_string(final_state["final_trade_decision"])
-        # Filter out explicit BUY/SELL/HOLD recommendations
-        filtered_content = _filter_trading_recommendations(decision_content)
-        report_lines.append(filtered_content)
+        report_lines.append(_format_intelligence_summary(decision_content))
     else:
         report_lines.append("*No executive summary available.*")
     report_lines.append("")
@@ -1001,10 +1088,10 @@ def generate_comprehensive_report(final_state, ticker, analysis_date, report_dir
     report_lines.append("---")
     report_lines.append("")
 
-    # Research Team Decision
-    report_lines.append("## Research Team Decision")
+    # Research Team Commentary
+    report_lines.append("## Research Team Commentary")
     report_lines.append("")
-    report_lines.append("> *The Research Manager synthesizes the Bull vs Bear debate to provide an AI strategy.*")
+    report_lines.append("> *The Research Manager synthesizes the Bull vs Bear debate into action-free commentary.*")
     report_lines.append("")
     if final_state.get("investment_plan"):
         report_lines.append(_ensure_string(final_state["investment_plan"]))
@@ -1014,10 +1101,10 @@ def generate_comprehensive_report(final_state, ticker, analysis_date, report_dir
     report_lines.append("---")
     report_lines.append("")
 
-    # Trading Team Plan
-    report_lines.append("## Trading Team Plan")
+    # Investing Team Commentary
+    report_lines.append("## Investing Team Commentary")
     report_lines.append("")
-    report_lines.append("> *The Trader creates a specific investment plan based on the research team's analysis.*")
+    report_lines.append("> *The Investor provides action-free commentary based on the research team's analysis.*")
     report_lines.append("")
     if final_state.get("trader_investment_plan"):
         report_lines.append(_ensure_string(final_state["trader_investment_plan"]))
@@ -1027,10 +1114,10 @@ def generate_comprehensive_report(final_state, ticker, analysis_date, report_dir
     report_lines.append("---")
     report_lines.append("")
 
-    # Deep Values Strategy
-    report_lines.append("## Deep Values Strategy")
+    # Deep Values Commentary
+    report_lines.append("## Deep Values Commentary")
     report_lines.append("")
-    report_lines.append("> *The Risk Management Team (Aggressive, Conservative, Neutral) debates and the Portfolio Manager provides the final strategy.*")
+    report_lines.append("> *The Risk Management Team debates and the Portfolio Manager provides final action-free commentary.*")
     report_lines.append("")
     if final_state.get("final_trade_decision"):
         report_lines.append(_ensure_string(final_state["final_trade_decision"]))
@@ -1043,7 +1130,7 @@ def generate_comprehensive_report(final_state, ticker, analysis_date, report_dir
     # Footer
     report_lines.append("## Disclaimer")
     report_lines.append("")
-    report_lines.append("*This analysis is generated by Deep Value Intelligence, an AI-powered multi-agent trading framework. ")
+    report_lines.append("*This analysis is generated by Deep Value Intelligence, an AI-powered multi-agent investing framework. ")
     report_lines.append("This report is for informational and educational purposes only and does not constitute financial advice. ")
     report_lines.append("Always conduct your own research and consult with qualified financial advisors before making investment decisions.*")
     report_lines.append("")
@@ -1191,17 +1278,17 @@ def display_complete_report(final_state):
                 )
             )
 
-    # III. Trading Team Reports
+    # III. Investing Team Reports
     if final_state.get("trader_investment_plan"):
         console.print(
             Panel(
                 Panel(
                     safe_markdown(final_state["trader_investment_plan"]),
-                    title="Trader",
+                    title="Investor",
                     border_style="blue",
                     padding=(1, 2),
                 ),
-                title="III. Trading Team Plan",
+                title="III. Investing Team Plan",
                 border_style="yellow",
                 padding=(1, 2),
             )
@@ -1274,7 +1361,7 @@ def display_complete_report(final_state):
 
 def update_research_team_status(status):
     """Update status for all research team members and trader."""
-    research_team = ["Bull Researcher", "Bear Researcher", "Research Manager", "Trader"]
+    research_team = ["Bull Researcher", "Bear Researcher", "Research Manager", "Investor"]
     for agent in research_team:
         message_buffer.update_agent_status(agent, status)
 
@@ -1609,7 +1696,7 @@ def run_analysis():
                             "Risky Analyst", "in_progress"
                         )
 
-                # Trading Team
+                # Investing Team
                 if (
                     "trader_investment_plan" in chunk
                     and chunk["trader_investment_plan"]

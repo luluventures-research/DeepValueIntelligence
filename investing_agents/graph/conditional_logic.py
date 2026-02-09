@@ -2,7 +2,7 @@
 
 import logging
 
-from investingagents.agents.utils.agent_states import AgentState
+from investing_agents.agents.utils.agent_states import AgentState
 
 logger = logging.getLogger(__name__)
 

@@ -26,7 +26,7 @@ def create_trader(llm, memory):
 
         context = {
             "role": "user",
-            "content": f"Based on a comprehensive analysis by a team of analysts, here is an investment plan tailored for {company_name}. This plan incorporates insights from fundamental business analysis, market trends, macroeconomic indicators, and sentiment analysis. Use this plan as a foundation for evaluating your long-term investment decision.\n\nProposed Investment Plan: {investment_plan}\n\nApply selective contrarian thinking to critically analyze what the news and sentiment reveal about potential opportunities or risks. Make an informed and strategic investment decision.",
+            "content": f"Based on a comprehensive analysis by a team of analysts, here is an investment plan tailored for {company_name}. This plan incorporates insights from fundamental business analysis, market trends, macroeconomic indicators, and sentiment analysis. Use this plan as a foundation for evaluating the long-term business outlook.\n\nProposed Investment Plan: {investment_plan}\n\nApply selective contrarian thinking to critically analyze what the news and sentiment reveal about potential opportunities or risks. Provide a thoughtful commentary with a clear stance label.",
         }
 
         messages = [
@@ -63,7 +63,7 @@ INVESTMENT PHILOSOPHY:
 - Ignore short-term market movements and sentiment swings while analyzing what they reveal about opportunity
 - Focus on what the business will earn over the next 5-10 years
 
-Based on your analysis, provide a specific recommendation following value investing principles with selective contrarian insights. End with a firm decision and always conclude your response with 'FINAL INVESTMENT PROPOSAL: **BUY/HOLD/SELL**' to confirm your recommendation. 
+Based on your analysis, provide a specific commentary following value investing principles with selective contrarian insights. Conclude your response with a concise paragraph labeled 'FINAL INVESTMENT STANCE: **ADVOCATE/WATCH/AVOID**' to confirm your stance.
 
 Learn from past value investing decisions and mistakes: {past_memory_str}""",
             },
@@ -78,4 +78,4 @@ Learn from past value investing decisions and mistakes: {past_memory_str}""",
             "sender": name,
         }
 
-    return functools.partial(trader_node, name="Trader")
+    return functools.partial(trader_node, name="Investor")

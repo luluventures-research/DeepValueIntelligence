@@ -1033,7 +1033,7 @@ def get_stock_news_google(ticker, curr_date):
         2. **Social Media Sentiment**: Market discussions, investor sentiment, trending topics
         3. **Financial Performance**: Recent financial metrics, analyst ratings, price movements
         4. **Market Context**: Industry trends, competitive landscape, regulatory changes
-        5. **Investment Signals**: Buy/sell recommendations, target prices, risk factors
+        5. **Investment Signals**: Valuation signals, target prices, key risks, and catalysts (no action labels)
 
         **IMPORTANT INSTRUCTIONS:**
         - Always specify the actual date range of the information you're providing
@@ -1280,4 +1280,3 @@ def get_fundamentals_openai(ticker, curr_date):
     )
 
     return response.output[1].content[0].text
-

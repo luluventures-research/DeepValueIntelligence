@@ -2,7 +2,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import AIMessage
 import time
 import json
-from investingagents.dataflows.interface import get_enhanced_fundamentals
+from investing_agents.dataflows.interface import get_enhanced_fundamentals
 
 
 def create_fundamentals_analyst(llm, toolkit):
@@ -74,7 +74,7 @@ def create_fundamentals_analyst(llm, toolkit):
             "- Three-scenario DCF valuation with detailed calculations and fair value ranges\n"
             "- Current vs historical average comparison table\n"
             "- Key investment insights, red flags, and opportunities\n"
-            "- Final investment recommendation with supporting rationale\n"
+            "- Final investment stance (ADVOCATE/WATCH/AVOID) with supporting rationale\n"
             "Finally, double-check your work to ensure all the required metrics are present in the final table.\n"
             "Make sure to include as much detail as possible. Do not simply state the trends are mixed, provide detailed and finegrained analysis and insights that may help traders make decisions.\n"
             "Make sure to append a Markdown table at the end of the report to organize key points in the report, organized and easy to read."
@@ -88,8 +88,8 @@ def create_fundamentals_analyst(llm, toolkit):
                     " Use the provided tools to progress towards answering the question."
                     " If you are unable to fully answer, that's OK; another assistant with different tools"
                     " will help where you left off. Execute what you can to make progress."
-                    " If you or any other assistant has the FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL** or deliverable,"
-                    " prefix your response with FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL** so the team knows to stop."
+                    " If you or any other assistant has the FINAL INVESTMENT STANCE: **ADVOCATE/WATCH/AVOID** or deliverable,"
+                    " prefix your response with FINAL INVESTMENT STANCE: **ADVOCATE/WATCH/AVOID** so the team knows to stop."
                     " You have access to the following tools: {tool_names}.\n{system_message}"
                     "For your reference, the current date is {current_date}. The company we want to look at is {ticker}",
                 ),

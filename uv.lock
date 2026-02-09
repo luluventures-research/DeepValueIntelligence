@@ -4689,7 +4689,7 @@ wheels = [
 ]
 
 [[package]]
-name = "investingagents"
+name = "investing_agents"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

@@ -1,6 +1,6 @@
 ## Project Overview
 
-This project, `InvestingAgents`, is a multi-agent LLM financial trading framework. It uses a team of specialized AI agents to analyze financial markets, debate potential trading strategies, and make decisions. The framework is designed to mirror the structure of a real-world trading firm, with roles for analysts, researchers, traders, and risk managers.
+This project, `InvestingAgents`, is a multi-agent LLM financial investing framework. It uses a team of specialized AI agents to analyze financial markets, debate potential investing strategies, and make decisions. The framework is designed to mirror the structure of a real-world trading firm, with roles for analysts, researchers, traders, and risk managers.
 
 The system is built on Python and heavily utilizes the `LangGraph` library to create and manage the agentic workflows. It supports various LLM backends including OpenAI, Google Gemini, and Anthropic, with a default configuration pointing to a local Ollama setup.
 
@@ -8,11 +8,11 @@ The core of the application is a `InvestingAgentsGraph` which orchestrates the i
 
 ## Key Components
 
-*   **`InvestingAgentsGraph` (`investingagents/graph/trading_graph.py`):** The central class that defines and runs the entire multi-agent workflow using `LangGraph`.
-*   **Agents (`investingagents/agents/`):** Individual agents with specialized roles, such as `FundamentalsAnalyst`, `MarketAnalyst`, `BullResearcher`, `Trader`, etc.
-*   **Tools (`investingagents/dataflows/`):** A collection of tools for gathering financial data from various sources like Yahoo Finance, Reddit, Finnhub, and Google News.
+*   **`InvestingAgentsGraph` (`investing_agents/graph/trading_graph.py`):** The central class that defines and runs the entire multi-agent workflow using `LangGraph`.
+*   **Agents (`investing_agents/agents/`):** Individual agents with specialized roles, such as `FundamentalsAnalyst`, `MarketAnalyst`, `BullResearcher`, `Investor`, etc.
+*   **Tools (`investing_agents/dataflows/`):** A collection of tools for gathering financial data from various sources like Yahoo Finance, Reddit, Finnhub, and Google News.
 *   **CLI (`cli/main.py`):** A rich, interactive command-line interface built with `Typer` and `rich` for running the analysis and visualizing the process in real-time.
-*   **Configuration (`investingagents/default_config.py`):** A centralized configuration file for managing LLM providers, API keys, file paths, and other parameters.
+*   **Configuration (`investing_agents/default_config.py`):** A centralized configuration file for managing LLM providers, API keys, file paths, and other parameters.
 
 ## Installation & Setup
 
@@ -25,8 +25,8 @@ The core of the application is a `InvestingAgentsGraph` which orchestrates the i
 2.  **Create a virtual environment:**
     The project recommends using `conda`.
     ```bash
-    conda create -n investingagents python=3.13
-    conda activate investingagents
+    conda create -n investing_agents python=3.13
+    conda activate investing_agents
     ```
 
 3.  **Install dependencies:**
@@ -75,7 +75,7 @@ python main.py
 
 ## Configuration
 
-The main configuration is located in `investingagents/default_config.py`. You can create a `local_config.py` to override these settings without modifying the original files.
+The main configuration is located in `investing_agents/default_config.py`. You can create a `local_config.py` to override these settings without modifying the original files.
 
 Key configuration options include:
 

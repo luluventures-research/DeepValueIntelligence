@@ -5,7 +5,7 @@ Setup script for the InvestingAgents package.
 from setuptools import setup, find_packages
 
 setup(
-    name="investingagents",
+    name="investing_agents",
     version="0.1.0",
     description="Multi-Agents LLM Financial Trading Framework",
     author="InvestingAgents Team",
@@ -29,7 +29,7 @@ setup(
     python_requires=">=3.10",
     entry_points={
         "console_scripts": [
-            "investingagents=cli.main:app",
+            "investing_agents=cli.main:app",
         ],
     },
     classifiers=[

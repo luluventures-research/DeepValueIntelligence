@@ -10,8 +10,8 @@ import pandas as pd
 import os
 from dateutil.relativedelta import relativedelta
 from langchain_openai import ChatOpenAI
-import investingagents.dataflows.interface as interface
-from investingagents.default_config import DEFAULT_CONFIG
+import investing_agents.dataflows.interface as interface
+from investing_agents.default_config import DEFAULT_CONFIG
 from langchain_core.messages import HumanMessage
 
 

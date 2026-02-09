@@ -22,7 +22,7 @@ def create_risk_manager(llm, memory):
         for i, rec in enumerate(past_memories, 1):
             past_memory_str += rec["recommendation"] + "\n\n"
 
-        prompt = f"""As the Risk Management Judge and Investment Facilitator following Warren Buffett's value investing principles, your goal is to evaluate the debate between three risk analysts and determine the best course of action for the long-term investor. Your decision must result in a clear recommendation: Buy, Sell, or Hold. Choose Hold only if strongly justified by specific arguments, not as a fallback when all sides seem valid. Strive for clarity and decisiveness.
+        prompt = f"""As the Risk Management Judge and Investment Facilitator following Warren Buffett's value investing principles, your goal is to evaluate the debate between three risk analysts and produce a clear risk commentary for the long-term investor. Conclude with a stance label: ADVOCATE, WATCH, or AVOID.
 
 VALUE INVESTING RISK FRAMEWORK:
 - **Business Risk vs. Market Risk**: Focus on permanent business impairment, not temporary price volatility
@@ -32,15 +32,16 @@ VALUE INVESTING RISK FRAMEWORK:
 - **Permanent vs Temporary**: Distinguish between temporary earnings dips and permanent competitive disadvantage
 - **Financial Strength**: Strong balance sheets and cash flows reduce business risk regardless of market sentiment
 
-Guidelines for Decision-Making:
+Guidelines for Commentary:
 1. **Summarize Key Arguments**: Extract the strongest points from each analyst, focusing on relevance to the context.
-2. **Provide Rationale**: Support your recommendation with direct quotes and counterarguments from the debate.
-3. **Refine the Trader's Plan**: Start with the trader's original plan, **{trader_plan}**, and adjust it based on the analysts' insights.
-4. **Learn from Past Mistakes**: Use lessons from **{past_memory_str}** to address prior misjudgments and improve the decision you are making now to make sure you don't make a wrong BUY/SELL/HOLD call that loses money.
+2. **Provide Rationale**: Support your commentary with direct quotes and counterarguments from the debate.
+3. **Refine the Investor's Plan**: Start with the investor's original plan, **{trader_plan}**, and adjust it based on the analysts' insights.
+4. **Learn from Past Mistakes**: Use lessons from **{past_memory_str}** to address prior misjudgments and improve the commentary you are making now.
 
 Deliverables:
-- A clear and actionable recommendation: Buy, Sell, or Hold.
+- A clear summary of risk posture and conditions to monitor.
 - Detailed reasoning anchored in the debate and past reflections.
+- A final stance label: ADVOCATE / WATCH / AVOID.
 
 ---
 
