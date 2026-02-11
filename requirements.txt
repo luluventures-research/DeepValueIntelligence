@@ -22,7 +22,15 @@ redis
 chainlit
 rich
 questionary
-langchain_anthropic
+langchain-anthropic
 langchain-google-genai
 google-genai
 pillow
+typer
+beautifulsoup4
+python-dateutil
+tenacity
+pydantic
+numpy
+matplotlib
+openai
