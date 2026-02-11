@@ -99,9 +99,9 @@ You will also need the FinnHub API for financial data. All of our code is implem
 export FINNHUB_API_KEY=$YOUR_FINNHUB_API_KEY
 ```
 
-You will need the OpenAI API for all the agents.
+You will need the Google Cloud / Gemini API for all the agents.
 ```bash
-export OPENAI_API_KEY=$YOUR_OPENAI_API_KEY
+export GOOGLE_API_KEY=$YOUR_GOOGLE_API_KEY
 ```
 
 ### CLI Usage
