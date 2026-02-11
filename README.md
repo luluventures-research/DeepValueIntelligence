@@ -3,6 +3,7 @@
 </p>
 
 <div align="center" style="line-height: 1;">
+  <a href="https://www.deepvalues.ai" target="_blank"><img alt="Website" src="https://img.shields.io/badge/Website-deepvalues.ai-0F766E?logo=googlechrome&logoColor=white"/></a>
   <a href="https://www.linkedin.com/in/xinwei-fan/" target="_blank"><img alt="LinkedIn" src="https://img.shields.io/badge/LinkedIn-Creator-0A66C2?logo=linkedin&logoColor=white"/></a>
   <a href="https://x.com/thedeepvalue?s=21" target="_blank"><img alt="X Follow" src="https://img.shields.io/badge/X-thedeepvalue-white?logo=x&logoColor=white"/></a>
   <a href="https://discord.gg/3qJ6Yz3g" target="_blank"><img alt="Discord" src="https://img.shields.io/badge/Discord-DeepValueIntelligence-7289da?logo=discord&logoColor=white&color=7289da"/></a>
