@@ -3,12 +3,9 @@
 </p>
 
 <div align="center" style="line-height: 1;">
-  <a href="https://arxiv.org/abs/2412.20138" target="_blank"><img alt="arXiv" src="https://img.shields.io/badge/arXiv-2412.20138-B31B1B?logo=arxiv"/></a>
-  <a href="https://discord.com/invite/hk9PGKShPK" target="_blank"><img alt="Discord" src="https://img.shields.io/badge/Discord-DeepValueIntelligence-7289da?logo=discord&logoColor=white&color=7289da"/></a>
   <a href="https://www.linkedin.com/in/xinwei-fan/" target="_blank"><img alt="LinkedIn" src="https://img.shields.io/badge/LinkedIn-Xinwei%20Fan-0A66C2?logo=linkedin&logoColor=white"/></a>
-  <a href="https://x.com/LuluResearch" target="_blank"><img alt="X Follow" src="https://img.shields.io/badge/X-LuluResearch-white?logo=x&logoColor=white"/></a>
+  <a href="https://x.com/thedeepvalue?s=21" target="_blank"><img alt="X Follow" src="https://img.shields.io/badge/X-thedeepvalue-white?logo=x&logoColor=white"/></a>
   <br>
-  <a href="https://github.com/luluventures-research/DeepValueIntelligence" target="_blank"><img alt="Community" src="https://img.shields.io/badge/Join_GitHub_Community-luluventures-research-14C290?logo=discourse"/></a>
 </div>
 
 ---
