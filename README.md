@@ -88,7 +88,7 @@ cd DeepValueIntelligence
 
 Create a virtual environment in any of your favorite environment managers:
 ```bash
-conda create -n DeepValueIntelligence python=3.13
+conda create -n DeepValueIntelligence python=3.10
 conda activate DeepValueIntelligence
 ```
 
@@ -96,6 +96,11 @@ Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
+
+Recommended runtime:
+- Python `3.10` or `3.11` is recommended.
+- `.python-version` in this repository is `3.10`.
+- If you run with Python `3.13`, some dependency stacks may fail at import-time depending on your local environment.
 
 ### Required APIs
 
@@ -107,6 +112,12 @@ export FINNHUB_API_KEY=$YOUR_FINNHUB_API_KEY
 You will need the Google Cloud / Gemini API for all the agents.
 ```bash
 export GOOGLE_API_KEY=$YOUR_GOOGLE_API_KEY
+```
+
+If you use non-Google providers or OpenAI-compatible embeddings, also set:
+```bash
+export OPENAI_API_KEY=$YOUR_OPENAI_API_KEY
+export ANTHROPIC_API_KEY=$YOUR_ANTHROPIC_API_KEY
 ```
 
 ### CLI Usage
@@ -131,11 +142,51 @@ An interface will appear showing results as they load, letting you track the age
   <img src="assets/cli/cli_transaction.png" width="100%" style="display: inline-block; margin: 0 2%;">
 </p>
 
+### Script Usage (Non-Interactive)
+
+You can run the framework directly with flags:
+
+```bash
+python main.py \
+  --ticker NVDA \
+  --date 2024-05-10 \
+  --provider google \
+  --deep-model gemini-3-pro-preview \
+  --quick-model gemini-3-flash-preview \
+  --online-tools
+```
+
+Useful flags:
+- `--llm-timeout 1800` and `--llm-max-retries 5` for long runs/retry behavior
+- `--embedding-provider {openai,google,ollama,none}` and `--embedding-model ...`
+- `--plot-fundamentals/--no-plot-fundamentals` to control metric chart generation
+- `--generate-thumbnail` to render 1920x1080 visual thumbnails
+
+### Output Structure
+
+By default, outputs are written under:
+
+`results/<TICKER>/<DATE>/`
+
+Key artifacts:
+- `results/<TICKER>/<DATE>/reports/<TICKER>_deep_value_intelligence_<DATE>.md`
+- `results/<TICKER>/<DATE>/reports/images/*` (fundamentals charts)
+- `results/<TICKER>/<DATE>/message_tool.log` (interactive CLI trace)
+
+Override results root with:
+```bash
+export TRADINGAGENTS_RESULTS_DIR=/absolute/path/to/results
+```
+
 ### Online Tools vs Offline
 
 The framework can run in two modes:
 - **Online tools enabled**: agents fetch live data (Yahoo Finance, Finnhub, Google News, Reddit, stockstats).
 - **Online tools disabled**: agents rely on cached/offline sources (e.g., SimFin data and cached reports). This is useful for deterministic backtests or running without API keys.
+
+Important offline note:
+- Several offline loaders expect a local `data_dir` hierarchy (e.g., `fundamental_data/simfin_data_all/...` and `finnhub_data/...`).
+- `investing_agents/default_config.py` currently includes a machine-specific `data_dir`. For offline runs, update `config["data_dir"]` to your local dataset root.
 
 ## DeepValueIntelligence Package
 
@@ -182,6 +233,19 @@ print(decision)
 > For `online_tools`, we recommend enabling them for experimentation, as they provide access to real-time data. The agents' offline tools rely on cached data from our **Lulu TradingDB**, a curated dataset we use for backtesting. We're currently in the process of refining this dataset, and we plan to release it soon alongside our upcoming projects. Stay tuned!
 
 You can view the full list of configurations in `investing_agents/default_config.py`.
+
+## Batch Utility (Optional)
+
+For daily earnings batch runs on S&P 500 names:
+
+```bash
+python utils/run_daily_sp500_earnings_analysis.py --date 2026-02-11
+```
+
+Notes:
+- Requires `FINNHUB_API_KEY`.
+- Automatically skips existing reports by default (`--skip-existing`).
+- Supports `--dry-run`, `--max-tickers`, and custom S&P500 universe file via `--sp500-file`.
 
 ## Contributing
 
