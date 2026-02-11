@@ -41,10 +41,12 @@ DeepValueIntelligence is a multi-agent investing framework that mirrors the dyna
 Our framework decomposes complex trading tasks into specialized roles. This ensures the system achieves a robust, scalable approach to market analysis and decision-making.
 
 ### Analyst Team
-- Fundamentals Analyst: Evaluates company financials and performance metrics through a 10-year comprehensive historical analysis, identifying intrinsic values and potential red flags. The analysis utilizes an improved prompt to ensure completeness and accuracy of all required metrics.
-- Sentiment Analyst: Analyzes social media and public sentiment using sentiment scoring algorithms to gauge short-term market mood.
-- News Analyst: Monitors global news and macroeconomic indicators, interpreting the impact of events on market conditions.
-- Technical Analyst: Utilizes technical indicators (like MACD and RSI) to detect trading patterns and forecast price movements.
+- Fundamentals Analyst: Performs a detailed 10-year fundamental review, including financial strength, profitability trends, and DCF-based valuation scenarios.
+- Value Analyst (Buffett): Applies Buffett-style filters (moat, management quality, capital allocation, margin of safety) to produce a value-oriented stance.
+- Growth Analyst (Lynch/Druckenmiller/Fisher): Evaluates growth quality, TAM runway, inflection points, unit economics, and growth-style valuation frameworks.
+- Market Analyst: Analyzes price action, trend, momentum, volatility, and volume indicators (e.g., SMA/EMA, MACD, RSI, Bollinger Bands, ATR, VWMA).
+- Social Analyst: Synthesizes social sentiment and company-specific chatter/news to assess short-term narrative and positioning risk.
+- News Analyst: Tracks global macro and market-moving headlines to evaluate regime shifts and event-driven impacts on the target company.
 
 <p align="center">
   <img src="assets/analyst.png" width="100%" style="display: inline-block; margin: 0 2%;">
