@@ -13,3 +13,5 @@ utils/cache/
 utils/sec_metrics_builder/stock_price_history_universal.json
 utils/pypl_facts.json
 *.log
+output/
+utils/output/

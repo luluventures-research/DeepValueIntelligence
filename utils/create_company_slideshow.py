@@ -34,9 +34,11 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
 
     current_year = datetime.now().year
-    start_year = current_year - 10
+    # Use only completed fiscal years to avoid partial current-year rows.
+    end_year = current_year - 1
+    start_year = end_year - 9
 
-    # 1. Generate the CSV table for the last 10 years and the current year.
+    # 1. Generate the CSV table for the last 10 completed fiscal years.
     sec_metrics_output_dir = os.path.join(output_dir, "sec_metrics_output", sticker)
     sec_metrics_command = [
         "python",
@@ -45,7 +47,7 @@ def main():
         sticker,
         "--years",
         str(start_year),
-        str(current_year),
+        str(end_year),
         "--output-dir",
         sec_metrics_output_dir,
         "--core-metrics-only"

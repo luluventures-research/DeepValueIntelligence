@@ -140,7 +140,7 @@ SEC_METRICS = {
     'OperatingLeaseExpense': ['OperatingLeaseExpense'],
     'StockBasedCompensation': ['ShareBasedCompensation', 'StockBasedCompensation'],
     'OtherOperatingExpenses': ['OtherOperatingIncomeExpenseNet'],
-    'TotalOperatingExpenses': ['OperatingExpenses'],
+    'TotalOperatingExpenses': ['OperatingExpenses', 'CostsAndExpenses'],
 
     # INCOME STATEMENT - Income & Profit (12 metrics)
     'GrossProfit': ['GrossProfit'],
@@ -148,7 +148,7 @@ SEC_METRICS = {
     'IncomeTaxExpenseBenefit': ['IncomeTaxExpenseBenefit', 'IncomeTaxExpense'],
     'NetIncomeLoss': ['NetIncomeLoss', 'NetIncome'],
     'NetIncomeAvailableToCommonShareholders': ['NetIncomeLossAvailableToCommonStockholdersBasic'],
-    'InterestExpense': ['InterestExpense', 'InterestExpenseDebt'],
+    'InterestExpense': ['InterestExpense', 'InterestExpenseDebt', 'InterestExpenseBorrowings', 'InterestExpenseAndDebtExpense'],
     'OtherNonoperatingIncomeExpense': ['NonoperatingIncomeExpense', 'OtherNonoperatingIncomeExpense'],
     'GainLossOnSaleOfAssets': ['GainLossOnSaleOfPropertyPlantEquipment', 'GainLossOnSaleOfAssets'],
     'GainLossOnInvestments': ['GainLossOnInvestments'],
@@ -168,7 +168,12 @@ SEC_METRICS = {
 
     # CASH FLOW STATEMENT - Investing Activities (7 metrics)
     'NetCashFromInvestingActivities': ['NetCashProvidedByUsedInInvestingActivities'],
-    'CapitalExpenditures': ['PaymentsToAcquirePropertyPlantAndEquipment'],
+    'CapitalExpenditures': [
+        'PaymentsToAcquirePropertyPlantAndEquipment',
+        'PaymentsToAcquireProductiveAssets',
+        'PaymentsToAcquireOtherProductiveAssets',
+        'CapitalExpenditures'
+    ],
     'BusinessAcquisitions': ['PaymentsToAcquireBusinessesNetOfCashAcquired'],
     'InvestmentPurchases': ['PaymentsToAcquireInvestments'],
     'AssetSales': ['ProceedsFromSaleOfPropertyPlantAndEquipment'],
@@ -978,6 +983,39 @@ class SECMetricsBuilder:
             return pb if pb <= 1000 else 1000  # Cap extreme values
         return None  # Negative book value = undefined P/B
 
+    def get_book_value_share_denominator(self, year_data: Dict) -> Optional[float]:
+        """Choose the best share count for Book Value Per Share calculations."""
+        candidates = [
+            year_data.get('CommonStockSharesOutstanding'),
+            year_data.get('WeightedAverageSharesBasic'),
+            year_data.get('WeightedAverageSharesDiluted')
+        ]
+        for shares in candidates:
+            if shares is not None and shares > 0:
+                return shares
+        return None
+
+    def get_operating_income_proxy(self, year_data: Dict) -> Optional[float]:
+        """
+        Get operating income from filings, or estimate EBIT when operating income is unavailable.
+
+        Proxy: EBIT ~= NetIncome + InterestExpense + IncomeTaxExpenseBenefit
+        """
+        operating_income = year_data.get('OperatingIncomeLoss')
+        if operating_income is not None:
+            return operating_income
+
+        net_income = year_data.get('NetIncomeLoss')
+        interest_expense = year_data.get('InterestExpense')
+        tax_expense = year_data.get('IncomeTaxExpenseBenefit')
+
+        if net_income is None:
+            return None
+        if interest_expense is None and tax_expense is None:
+            return None
+
+        return net_income + (interest_expense or 0) + (tax_expense or 0)
+
     def get_best_revenue_metric(self, year_data: Dict, year: int) -> tuple[Optional[float], Optional[str]]:
         """Get best revenue metric based on accounting standards"""
         revenues = year_data.get('Revenues')
@@ -1038,7 +1076,7 @@ class SECMetricsBuilder:
     
     def calculate_operating_margin(self, year_data: Dict, year: int) -> Optional[float]:
         """Calculate Operating Margin"""
-        operating_income = year_data.get('OperatingIncomeLoss')
+        operating_income = self.get_operating_income_proxy(year_data)
         revenue, revenue_source = self.get_best_revenue_metric(year_data, year)
         
         if operating_income is not None and revenue is not None and revenue > 0:
@@ -1102,9 +1140,9 @@ class SECMetricsBuilder:
     def calculate_current_ratio(self, current_assets: Optional[float], 
                               current_liabilities: Optional[float]) -> Optional[float]:
         """Calculate Current Ratio"""
-        if current_assets is None:
+        if current_assets is None or current_liabilities is None:
             return None
-        if current_liabilities is None or current_liabilities == 0:
+        if current_liabilities == 0:
             return 999.99 if current_assets > 0 else None  # Infinite liquidity
         if current_liabilities > 0:
             ratio = current_assets / current_liabilities
@@ -1115,6 +1153,9 @@ class SECMetricsBuilder:
                                      debt_noncurrent: Optional[float], 
                                      stockholders_equity: Optional[float]) -> Optional[float]:
         """Calculate Debt-to-Equity Ratio"""
+        if debt_current is None and debt_noncurrent is None:
+            return None
+
         total_debt = (debt_current or 0) + (debt_noncurrent or 0)
         
         if stockholders_equity and stockholders_equity > 0:
@@ -1191,7 +1232,9 @@ class SECMetricsBuilder:
     def calculate_dividend_payout_ratio(self, dividends_paid: Optional[float], 
                                       net_income: Optional[float]) -> Optional[float]:
         """Calculate Dividend Payout Ratio"""
-        if net_income is None or net_income <= 0:
+        if net_income is None:
+            return None
+        if net_income <= 0:
             return 0  # No positive earnings to pay dividends from
         if dividends_paid is None:
             return 0  # No dividends paid
@@ -1306,9 +1349,10 @@ class SECMetricsBuilder:
         derived['PEGRatio'] = None  # Will be calculated after growth metrics
         
         # 4. BookValuePerShare
+        book_value_share_denominator = self.get_book_value_share_denominator(current_year_data)
         derived['BookValuePerShare'] = self.calculate_book_value_per_share(
             current_year_data.get('StockholdersEquity'),
-            current_year_data.get('CommonStockSharesOutstanding')
+            book_value_share_denominator
         )
         
         # 5. PriceToBook
@@ -1369,8 +1413,9 @@ class SECMetricsBuilder:
             current_year_data.get('DebtNoncurrent'),
             current_year_data.get('StockholdersEquity')
         )
+        operating_income_for_coverage = self.get_operating_income_proxy(current_year_data)
         derived['InterestCoverageRatio'] = self.calculate_interest_coverage_ratio(
-            current_year_data.get('OperatingIncomeLoss'),
+            operating_income_for_coverage,
             current_year_data.get('InterestExpense')
         )
         
@@ -1688,57 +1733,6 @@ class SECMetricsBuilder:
                         logger.debug(f"Calculated negative GrossProfit for {ticker} {year}. Revenues: {revenues}, CostOfRevenue: {cost_of_revenue}. Setting to None.")
                         year_data['GrossProfit'] = None
             
-            # Calculate GrossProfit if it's not available directly
-            if year_data.get('GrossProfit') is None:
-                revenues = year_data.get('Revenues')
-                cost_of_revenue = year_data.get('CostOfRevenue')
-                print(f"Revenues: {revenues}")
-                print(f"Cost of Revenue: {cost_of_revenue}")
-                if revenues is not None and cost_of_revenue is not None:
-                    gross_profit = revenues - cost_of_revenue
-                    if gross_profit > 0:
-                        year_data['GrossProfit'] = gross_profit
-                        print(f"Gross Profit: {gross_profit}")
-                    else:
-                        logger.debug(f"Calculated negative GrossProfit for {ticker} {year}. Revenues: {revenues}, CostOfRevenue: {cost_of_revenue}. Setting to None.")
-                        year_data['GrossProfit'] = None
-                        print(f"Gross Profit: None")
-            else:
-                print(f"Gross Profit: {year_data.get('GrossProfit')}")
-            
-            # Calculate GrossProfit if it's not available directly
-            if year_data.get('GrossProfit') is None:
-                revenues = year_data.get('Revenues')
-                cost_of_revenue = year_data.get('CostOfRevenue')
-                print(f"Revenues: {revenues}")
-                print(f"Cost of Revenue: {cost_of_revenue}")
-                if revenues is not None and cost_of_revenue is not None:
-                    gross_profit = revenues - cost_of_revenue
-                    if gross_profit > 0:
-                        year_data['GrossProfit'] = gross_profit
-                        print(f"Gross Profit: {gross_profit}")
-                    else:
-                        logger.debug(f"Calculated negative GrossProfit for {ticker} {year}. Revenues: {revenues}, CostOfRevenue: {cost_of_revenue}. Setting to None.")
-                        year_data['GrossProfit'] = None
-                        print(f"Gross Profit: None")
-            else:
-                print(f"Gross Profit: {year_data.get('GrossProfit')}")
-            
-            if 'CostOfRevenue' not in year_data or year_data['CostOfRevenue'] is None:
-                year_data['CostOfRevenue'] = year_data.get('CostsAndExpenses')
-
-            # Calculate GrossProfit if it's not available directly
-            if year_data.get('GrossProfit') is None:
-                revenues = year_data.get('Revenues')
-                cost_of_revenue = year_data.get('CostOfRevenue')
-                if revenues is not None and cost_of_revenue is not None:
-                    gross_profit = revenues - cost_of_revenue
-                    if gross_profit > 0:
-                        year_data['GrossProfit'] = gross_profit
-                    else:
-                        logger.debug(f"Calculated negative GrossProfit for {ticker} {year}. Revenues: {revenues}, CostOfRevenue: {cost_of_revenue}. Setting to None.")
-                        year_data['GrossProfit'] = None
-            
             # Calculate OperatingIncomeLoss if it's not available directly
             if year_data.get('OperatingIncomeLoss') is None:
                 gross_profit = year_data.get('GrossProfit')
@@ -1826,8 +1820,24 @@ class SECMetricsBuilder:
             rows = []
             years = sorted(company_data.keys())
             
-            # Add header row using appropriate metrics for the ticker type
-            header = self.get_csv_header(ticker, core_metrics_only)
+            # Build header based on metric availability (drop metrics empty across all years)
+            full_header = self.get_csv_header(ticker, core_metrics_only)
+            metric_columns = full_header[1:]  # Skip Year
+
+            def has_value(value: Any) -> bool:
+                return value is not None and not pd.isna(value)
+
+            filtered_metrics = [
+                metric_name
+                for metric_name in metric_columns
+                if any(has_value(company_data[year].get(metric_name)) for year in years)
+            ]
+
+            dropped_metrics = [m for m in metric_columns if m not in filtered_metrics]
+            if dropped_metrics:
+                logger.info(f"ℹ️  {ticker}: Dropped {len(dropped_metrics)} metrics with no values across all years")
+
+            header = ['Year'] + filtered_metrics
             rows.append(header)
             
             # Add data rows
@@ -1840,7 +1850,7 @@ class SECMetricsBuilder:
                     value = year_metrics.get(metric_name)
                     
                     # Format values appropriately
-                    if value is not None:
+                    if has_value(value):
                         if metric_name in ['EarningsPerShare', 'BookValuePerShare']:
                             row.append(f"{value:.4f}")
                         elif metric_name.endswith('Ratio') or metric_name.endswith('Rate') or metric_name.endswith('Margin'):
@@ -1889,19 +1899,37 @@ class SECMetricsBuilder:
                 expected_columns = ['Year'] + list(SEC_METRICS.keys()) + DERIVED_METRICS
                 metric_type_desc = f"{len(SEC_METRICS)} SEC + {len(DERIVED_METRICS)} derived"
                 
-            if list(df.columns) != expected_columns:
-                logger.error(f"❌ Column mismatch in {csv_path}")
-                logger.error(f"   Expected: {len(expected_columns)} columns ({metric_type_desc})")
-                logger.error(f"   Found: {len(df.columns)} columns")
+            # Validate columns with support for dropping fully-empty metrics
+            found_columns = list(df.columns)
+
+            if not found_columns or found_columns[0] != 'Year':
+                logger.error(f"❌ Invalid CSV format in {csv_path}: first column must be 'Year'")
+                return False
+
+            unexpected_columns = [c for c in found_columns if c not in expected_columns]
+            if unexpected_columns:
+                logger.error(f"❌ Unexpected columns in {csv_path}: {unexpected_columns}")
+                return False
+
+            ordered_expected_subset = [c for c in expected_columns if c in found_columns]
+            if found_columns != ordered_expected_subset:
+                logger.error(f"❌ Column order mismatch in {csv_path}")
+                logger.error(f"   Expected ordered subset: {ordered_expected_subset}")
+                logger.error(f"   Found: {found_columns}")
                 return False
             
-            # Check if we have reasonable year range
+            # Check if we have a reasonable year range
             years = df['Year'].tolist()
-            if not years or min(years) < 2015 or max(years) > 2025:
+            current_year = datetime.now().year
+            if not years or min(years) < 1990 or max(years) > current_year:
                 logger.warning(f"⚠️  Unusual year range in {csv_path}: {min(years) if years else 'None'}-{max(years) if years else 'None'}")
             
             # Check for completely empty rows
             non_year_columns = [col for col in df.columns if col != 'Year']
+            if not non_year_columns:
+                logger.warning(f"⚠️  No metric columns found in {csv_path}")
+                return False
+
             empty_rows = df[non_year_columns].isnull().all(axis=1).sum()
             
             if empty_rows == len(df):
