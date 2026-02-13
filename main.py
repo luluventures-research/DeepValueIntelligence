@@ -669,6 +669,26 @@ def main() -> None:
     if args.embedding_model:
         config["embedding_model"] = args.embedding_model
 
+    results_dir = Path(config["results_dir"]) / args.ticker / args.date
+    report_dir = results_dir / "reports"
+    report_dir.mkdir(parents=True, exist_ok=True)
+
+    # Generate thumbnails first when requested.
+    if args.generate_thumbnail:
+        try:
+            from utils.thumbnail import generate_thumbnails
+            saved = generate_thumbnails(
+                args.ticker,
+                report_dir,
+                api_key=config.get("google_api_key"),
+                ticker=args.ticker,
+                analysis_date=args.date,
+            )
+            if saved:
+                print(f"✅ Thumbnails saved: {', '.join(str(p) for p in saved)}")
+        except Exception as exc:
+            print(f"⚠️  Thumbnail generation failed: {exc}")
+
     # Initialize with custom config
     ta = InvestingAgentsGraph(debug=args.debug, config=config)
 
@@ -676,10 +696,6 @@ def main() -> None:
     final_state, decision = ta.propagate(args.ticker, args.date)
 
     print(decision)
-
-    results_dir = Path(config["results_dir"]) / args.ticker / args.date
-    report_dir = results_dir / "reports"
-    report_dir.mkdir(parents=True, exist_ok=True)
 
     fundamentals_chart_paths: List[str] = []
     if args.plot_fundamentals and final_state.get("fundamentals_report"):
@@ -701,22 +717,6 @@ def main() -> None:
     )
     report_path = report_dir / f"{args.ticker}_deep_value_intelligence_{args.date}.md"
     report_path.write_text(report_md, encoding="utf-8")
-
-    if args.generate_thumbnail:
-        try:
-            from utils.thumbnail import generate_thumbnails
-            company_label = final_state.get("company_of_interest", args.ticker)
-            saved = generate_thumbnails(
-                company_label,
-                report_dir,
-                api_key=config.get("google_api_key"),
-                ticker=args.ticker,
-                analysis_date=args.date,
-            )
-            if saved:
-                print(f"✅ Thumbnails saved: {', '.join(str(p) for p in saved)}")
-        except Exception as exc:
-            print(f"⚠️  Thumbnail generation failed: {exc}")
 
 
 if __name__ == "__main__":

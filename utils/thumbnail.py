@@ -3,7 +3,7 @@ import re
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import requests
 
@@ -174,6 +174,60 @@ def _wrap_text(draw, text: str, font, max_width: int) -> List[str]:
     return lines
 
 
+def _extract_logo_theme_color(logo) -> Tuple[int, int, int, int]:
+    fallback = (242, 82, 45, 255)
+    if logo is None:
+        return fallback
+
+    try:
+        from PIL import Image
+    except Exception:
+        return fallback
+
+    try:
+        sample = logo.convert("RGBA")
+        sample.thumbnail((140, 140), Image.Resampling.LANCZOS)
+
+        color_bins: Dict[Tuple[int, int, int], int] = {}
+        for r, g, b, a in sample.getdata():
+            if a < 96:
+                continue
+
+            max_c = max(r, g, b)
+            min_c = min(r, g, b)
+            saturation = max_c - min_c
+
+            # Skip near-white and near-black neutrals to find a usable accent color.
+            if max_c >= 246 and min_c >= 228:
+                continue
+            if saturation < 10 and max_c < 70:
+                continue
+
+            key = ((r // 24) * 24, (g // 24) * 24, (b // 24) * 24)
+            color_bins[key] = color_bins.get(key, 0) + 1
+
+        if not color_bins:
+            return fallback
+
+        def _bin_score(item: Tuple[Tuple[int, int, int], int]) -> float:
+            (rr, gg, bb), count = item
+            sat = max(rr, gg, bb) - min(rr, gg, bb)
+            brightness = max(rr, gg, bb)
+            return count * (1.0 + (sat / 255.0) * 1.8 + (brightness / 255.0) * 0.15)
+
+        r, g, b = max(color_bins.items(), key=_bin_score)[0]
+
+        if max(r, g, b) < 92:
+            scale = 92.0 / max(max(r, g, b), 1)
+            r = min(255, int(r * scale))
+            g = min(255, int(g * scale))
+            b = min(255, int(b * scale))
+
+        return (r, g, b, 255)
+    except Exception:
+        return fallback
+
+
 def _draw_overlay(
     image,
     ticker: str,
@@ -211,26 +265,28 @@ def _draw_overlay(
     canvas = Image.alpha_composite(canvas, shadow)
 
     draw = ImageDraw.Draw(canvas)
-    title_font = _load_font(96, bold=True, cjk=cjk)
+    title_font = _load_font(112, bold=True, cjk=cjk)
     subtitle_font = _load_font(56, bold=True, cjk=cjk)
     date_font = _load_font(40, bold=False, cjk=False)
     badge_font = _load_font(32, bold=True, cjk=False)
     watermark_font = _load_font(260, bold=True, cjk=False)
+    company_color = _extract_logo_theme_color(logo)
 
     # Badge.
     draw.rounded_rectangle((88, 92, 430, 164), radius=18, fill=(242, 82, 45, 238))
     draw.text((114, 113), "DEEP VALUE", fill=(255, 255, 255, 255), font=badge_font)
 
     # Watermark ticker.
-    draw.text((880, 735), ticker[:8], fill=(255, 255, 255, 32), font=watermark_font)
+    ticker_color = (company_color[0], company_color[1], company_color[2], 90)
+    draw.text((880, 735), ticker[:8], fill=ticker_color, font=watermark_font)
 
     # Title/subtitle/date.
     x = 150
     title_start_y = 250
     text_top = title_start_y
-    title_lines = _wrap_text(draw, title, title_font, 1020)[:2]
+    title_lines = _wrap_text(draw, title, title_font, 1060)[:2]
     title_line_height = draw.textbbox((0, 0), "Ag", font=title_font)[3]
-    title_step = max(114, title_line_height + 18)
+    title_step = max(128, title_line_height + 20)
     subtitle_height = draw.textbbox((0, 0), subtitle, font=subtitle_font)[3]
 
     title_widths = [draw.textbbox((0, 0), line, font=title_font)[2] for line in title_lines]
@@ -269,9 +325,22 @@ def _draw_overlay(
         pdraw.rounded_rectangle((0, 0, panel_w, panel_h), radius=28, fill=255)
         canvas.paste(panel, (int(panel_left), int(panel_top)), panel_mask)
 
+    title_stroke_width = 6 if cjk else 4
+    title_stroke_fill = (0, 0, 0, 205) if cjk else (0, 0, 0, 170)
+
     y = title_start_y
     for line in title_lines:
-        draw.text((x, y), line, font=title_font, fill=(255, 255, 255, 255), stroke_width=4, stroke_fill=(0, 0, 0, 170))
+        if cjk:
+            # Extra shadow pass to make CJK title text pop on busy backgrounds.
+            draw.text((x + 2, y + 2), line, font=title_font, fill=(0, 0, 0, 150))
+        draw.text(
+            (x, y),
+            line,
+            font=title_font,
+            fill=(255, 255, 255, 255),
+            stroke_width=title_stroke_width,
+            stroke_fill=title_stroke_fill,
+        )
         y += title_step
 
     draw.text((x, subtitle_y), subtitle, font=subtitle_font, fill=(235, 242, 252, 255), stroke_width=3, stroke_fill=(0, 0, 0, 150))
@@ -287,19 +356,20 @@ def _draw_overlay(
     # Logo card.
     if logo is not None:
         logo_img = logo.copy()
-        logo_img.thumbnail((206, 206), Image.Resampling.LANCZOS)
+        logo_img.thumbnail((276, 276), Image.Resampling.LANCZOS)
         lw, lh = logo_img.size
-        cx, cy = w - lw - 130, 104
-        card = Image.new("RGBA", (lw + 52, lh + 52), (255, 255, 255, 245))
-        card_mask = Image.new("L", (lw + 52, lh + 52), 0)
+        cx, cy = w - lw - 110, 86
+        card_padding = 34
+        card = Image.new("RGBA", (lw + card_padding * 2, lh + card_padding * 2), (255, 255, 255, 245))
+        card_mask = Image.new("L", (lw + card_padding * 2, lh + card_padding * 2), 0)
         cdraw = ImageDraw.Draw(card_mask)
-        cdraw.rounded_rectangle((0, 0, lw + 52, lh + 52), radius=24, fill=255)
-        canvas.paste(card, (cx - 26, cy - 26), card_mask)
+        cdraw.rounded_rectangle((0, 0, lw + card_padding * 2, lh + card_padding * 2), radius=24, fill=255)
+        canvas.paste(card, (cx - card_padding, cy - card_padding), card_mask)
         canvas.paste(logo_img, (cx, cy), logo_img)
     else:
         fallback_font = _load_font(52, bold=True, cjk=False)
         draw.rounded_rectangle((w - 360, 96, w - 88, 196), radius=18, fill=(18, 34, 60, 232))
-        draw.text((w - 330, 124), ticker[:8], fill=(255, 255, 255, 255), font=fallback_font)
+        draw.text((w - 330, 124), ticker[:8], fill=company_color, font=fallback_font)
 
     return canvas.convert("RGB")
 
@@ -379,7 +449,7 @@ def generate_thumbnails(
             subtitle = "估值，增长，风险评估"
             cjk = True
         else:
-            title = f"{display_name} Deep Value Analysis"
+            title = f"{display_name} Deep Value Intelligence"
             subtitle = "Valuation, Growth, and Risks"
             cjk = False
 

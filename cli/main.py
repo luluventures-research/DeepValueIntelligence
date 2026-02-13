@@ -1421,11 +1421,6 @@ def run_analysis():
     config["backend_url"] = selections["backend_url"]
     config["llm_provider"] = selections["llm_provider"].lower()
 
-    # Initialize the graph
-    graph = InvestingAgentsGraph(
-        [analyst.value for analyst in selections["analysts"]], config=config, debug=True
-    )
-
     # Create result directory
     results_dir = Path(config["results_dir"]) / selections["ticker"] / selections["analysis_date"]
     results_dir.mkdir(parents=True, exist_ok=True)
@@ -1433,6 +1428,27 @@ def run_analysis():
     report_dir.mkdir(parents=True, exist_ok=True)
     log_file = results_dir / "message_tool.log"
     log_file.touch(exist_ok=True)
+
+    # Generate thumbnails first when requested.
+    if selections.get("generate_thumbnail"):
+        try:
+            from utils.thumbnail import generate_thumbnails
+            saved = generate_thumbnails(
+                selections["ticker"],
+                report_dir,
+                api_key=config.get("google_api_key"),
+                ticker=selections["ticker"],
+                analysis_date=selections["analysis_date"],
+            )
+            if saved:
+                console.print(f"[green]Thumbnails saved:[/green] {', '.join(str(p) for p in saved)}")
+        except Exception as exc:
+            console.print(f"[yellow]Thumbnail generation failed:[/yellow] {exc}")
+
+    # Initialize the graph
+    graph = InvestingAgentsGraph(
+        [analyst.value for analyst in selections["analysts"]], config=config, debug=True
+    )
 
     def save_message_decorator(obj, func_name):
         func = getattr(obj, func_name)
@@ -1818,22 +1834,6 @@ def run_analysis():
             report_dir
         )
         console.print(f"\n[green]Comprehensive report saved to:[/green] {comprehensive_report_path}")
-
-        if selections.get("generate_thumbnail"):
-            try:
-                from utils.thumbnail import generate_thumbnails
-                company_label = final_state.get("company_of_interest", selections["ticker"])
-                saved = generate_thumbnails(
-                    company_label,
-                    report_dir,
-                    api_key=config.get("google_api_key"),
-                    ticker=selections["ticker"],
-                    analysis_date=selections["analysis_date"],
-                )
-                if saved:
-                    console.print(f"[green]Thumbnails saved:[/green] {', '.join(str(p) for p in saved)}")
-            except Exception as exc:
-                console.print(f"[yellow]Thumbnail generation failed:[/yellow] {exc}")
 
         # Display the complete final report
         display_complete_report(final_state)
